@@ -1,0 +1,146 @@
+/**
+ * Frontend CSS for ADM Bike Woo Locations checkout selectors.
+ *
+ * @package ADMBike_Woo_Locations
+ */
+
+/* ─── Loading Overlay ──────────────────────────────────────────────────────── */
+
+.admbike-checkout-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 9999;
+	background: rgba(255, 255, 255, 0.85);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.admbike-checkout-loading {
+	font-size: 16px;
+	color: #555;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.admbike-spinner {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	border: 3px solid rgba(0, 115, 170, 0.3);
+	border-top-color: #0073aa;
+	border-radius: 50%;
+	animation: admbike-spin 0.8s linear infinite;
+}
+
+@keyframes admbike-spin {
+	to { transform: rotate( 360deg ); }
+}
+
+/* ─── Field States ───────────────────────────────────────────────────────── */
+
+.admbike-hidden {
+	display: none !important;
+}
+
+/* ─── Coverage Info Box ───────────────────────────────────────────────────── */
+
+.admbike-coverage-info {
+	padding: 12px 16px;
+	border-radius: 4px;
+	margin: 10px 0;
+	font-size: 14px;
+	display: none;
+}
+
+.admbike-coverage-info.admbike-coverage-ok {
+	background: #d4edda;
+	border: 1px solid #c3e6cb;
+	color: #155724;
+}
+
+.admbike-coverage-info.admbike-coverage-paid {
+	background: #fff3cd;
+	border: 1px solid #ffeeba;
+	color: #856404;
+}
+
+.admbike-coverage-info.admbike-coverage-unavailable {
+	background: #f8d7da;
+	border: 1px solid #f5c6cb;
+	color: #721c24;
+}
+
+.admbike-coverage-message {
+	margin: 0;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.admbike-coverage-message .dashicons {
+	font-size: 18px;
+	line-height: 1;
+}
+
+/* ─── Checkout Field Overrides ────────────────────────────────────────────── */
+
+#admbike_state_id_field,
+#admbike_municipality_id_field,
+#admbike_postcode_select_field {
+	position: relative;
+}
+
+#admbike_state_id_field label,
+#admbike_municipality_id_field label,
+#admbike_postcode_select_field label {
+	font-weight: 600;
+}
+
+#admbike_state_id,
+#admbike_municipality_id,
+#admbike_postcode_select {
+	max-width: 100%;
+	width: 100%;
+}
+
+.admbike-field .select2-container,
+.admbike-field select {
+	max-width: 100% !important;
+}
+
+/* ─── Checkout Field Errors ───────────────────────────────────────────────── */
+
+.admbike-error {
+	background: #f8d7da;
+	border: 1px solid #f5c6cb;
+	color: #721c24;
+	padding: 8px 12px;
+	border-radius: 4px;
+	margin-bottom: 8px;
+	font-size: 13px;
+}
+
+/* ─── WooCommerce Place Order Button ─────────────────────────────────────── */
+
+.woocommerce-checkout #payment #place_order.disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
+@media ( max-width: 768px ) {
+	.admbike-checkout-loading {
+		font-size: 14px;
+	}
+
+	.admbike-coverage-info {
+		font-size: 13px;
+		padding: 10px 12px;
+	}
+}

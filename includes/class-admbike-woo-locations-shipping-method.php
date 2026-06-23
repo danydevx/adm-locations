@@ -1,0 +1,325 @@
+<?php
+/**
+ * WooCommerce shipping method for ADM Bike Woo Locations.
+ *
+ * @package ADMBike_Woo_Locations
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+if ( ! class_exists( 'WC_Shipping_Method' ) ) {
+	return;
+}
+
+class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
+
+	/**
+	 * Shipping method ID.
+	 *
+	 * @var string
+	 */
+	public $id = 'admbike_locations';
+
+	/**
+	 * Shipping method code.
+	 *
+	 * @var string
+	 */
+	public $method_code = 'admbike_locations';
+
+	/**
+	 * Shipping method title.
+	 *
+	 * @var string
+	 */
+	public $title = 'ADM Bike Cobertura';
+
+	/**
+	 * Repositories.
+	 *
+	 * @var array<string, object>
+	 */
+	protected $repositories = array();
+
+	/**
+	 * Constructor.
+	 *
+	 * @param int $instance_id Instance ID.
+	 * @return void
+	 */
+	public function __construct( $instance_id = 0 ) {
+		$this->id                 = 'admbike_locations';
+		$this->method_title        = __( 'ADM Bike Locations', 'admbike-woo-locations' );
+		$this->method_description  = __( 'Calculates shipping based on state, municipality and postal code coverage rules.', 'admbike-woo-locations' );
+		$this->instance_id         = absint( $instance_id );
+		$this->supports            = array(
+			'shipping-zones',
+			'instance-settings',
+			'instance-settings-modal',
+		);
+
+		$this->init();
+	}
+
+	/**
+	 * Initialize the shipping method.
+	 *
+	 * @return void
+	 */
+	public function init() {
+		$this->instance_form_fields = array(
+			'title' => array(
+				'title'       => __( 'Method Title', 'admbike-woo-locations' ),
+				'type'        => 'text',
+				'description' => __( 'This controls the title displayed at checkout.', 'admbike-woo-locations' ),
+				'default'     => __( 'Envío Coverage', 'admbike-woo-locations' ),
+				'desc_tip'   => true,
+			),
+			'tax_status' => array(
+				'title'   => __( 'Tax Status', 'admbike-woo-locations' ),
+				'type'    => 'select',
+				'description' => __( 'Tax status for this shipping method.', 'admbike-woo-locations' ),
+				'default' => 'taxable',
+				'options' => array(
+					'taxable' => __( 'Taxable', 'admbike-woo-locations' ),
+					'none'    => __( 'None', 'admbike-woo-locations' ),
+				),
+			),
+		);
+
+		$this->title = $this->get_option( 'title', __( 'Envío Coverage', 'admbike-woo-locations' ) );
+
+		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
+	}
+
+	/**
+	 * Get the states repository.
+	 *
+	 * @return ADMBike_Woo_Locations_State_Repository
+	 */
+	protected function states_repo() {
+		if ( ! isset( $this->repositories['states'] ) ) {
+			$this->repositories['states'] = new ADMBike_Woo_Locations_State_Repository();
+		}
+		return $this->repositories['states'];
+	}
+
+	/**
+	 * Get the municipalities repository.
+	 *
+	 * @return ADMBike_Woo_Locations_Municipality_Repository
+	 */
+	protected function municipalities_repo() {
+		if ( ! isset( $this->repositories['municipalities'] ) ) {
+			$this->repositories['municipalities'] = new ADMBike_Woo_Locations_Municipality_Repository();
+		}
+		return $this->repositories['municipalities'];
+	}
+
+	/**
+	 * Get the postcodes repository.
+	 *
+	 * @return ADMBike_Woo_Locations_Postcode_Repository
+	 */
+	protected function postcodes_repo() {
+		if ( ! isset( $this->repositories['postcodes'] ) ) {
+			$this->repositories['postcodes'] = new ADMBike_Woo_Locations_Postcode_Repository();
+		}
+		return $this->repositories['postcodes'];
+	}
+
+	/**
+	 * Get the shipping rules repository.
+	 *
+	 * @return ADMBike_Woo_Locations_Shipping_Rule_Repository
+	 */
+	protected function shipping_rules_repo() {
+		if ( ! isset( $this->repositories['shipping_rules'] ) ) {
+			$this->repositories['shipping_rules'] = new ADMBike_Woo_Locations_Shipping_Rule_Repository();
+		}
+		return $this->repositories['shipping_rules'];
+	}
+
+	/**
+	 * Get the postcode from the package.
+	 *
+	 * Priority:
+	 * 1. ADM Bike checkout session (if customer completed our custom selectors)
+	 * 2. Package destination postcode
+	 *
+	 * @param array<string, mixed> $package Shipping package.
+	 * @return string
+	 */
+	protected function get_postcode_from_package( $package ) {
+		if ( isset( WC()->session ) && WC()->session->has_session() ) {
+			$location = WC()->session->get( 'admbike_checkout_location' );
+			if ( ! empty( $location['postcode'] ) ) {
+				return preg_replace( '/[^0-9A-Za-z-]/', '', (string) $location['postcode'] );
+			}
+		}
+
+		$postcode = isset( $package['destination']['postcode'] )
+			? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $package['destination']['postcode'] )
+			: '';
+
+		return $postcode;
+	}
+
+	/**
+	 * Calculate shipping.
+	 *
+	 * Priority evaluation:
+	 * 1. Exact postcode match (highest specificity)
+	 * 2. Postcode range match
+	 * 3. Municipality match
+	 * 4. State match
+	 *
+	 * @param array<string, mixed> $package Shipping package.
+	 * @return void
+	 */
+	public function calculate_shipping( $package = array() ) {
+		ADMBike_Woo_Locations_Logger::debug(
+			'Shipping calculation started for package',
+			array(
+				'destination' => $package['destination'] ?? array(),
+			)
+		);
+
+		$postcode = $this->get_postcode_from_package( $package );
+
+		if ( empty( $postcode ) ) {
+			ADMBike_Woo_Locations_Logger::info( 'Shipping calculation: no postcode found in package' );
+			$this->add_no_shipping_message();
+			return;
+		}
+
+		$postcode_rows = $this->postcodes_repo()->get_by_postcode( $postcode );
+
+		if ( empty( $postcode_rows ) ) {
+			ADMBike_Woo_Locations_Logger::info(
+				'Shipping calculation: postcode {postcode} not found in locations database',
+				array( 'postcode' => $postcode )
+			);
+			$this->add_no_coverage_message( $postcode );
+			return;
+		}
+
+		$first_pc_row     = $postcode_rows[0];
+		$state_id         = (int) $first_pc_row['state_id'];
+		$municipality_id   = (int) $first_pc_row['municipality_id'];
+
+		ADMBike_Woo_Locations_Logger::debug(
+			'Shipping calculation: postcode resolved',
+			array(
+				'postcode'        => $postcode,
+				'state_id'        => $state_id,
+				'municipality_id' => $municipality_id,
+			)
+		);
+
+		$rules = $this->shipping_rules_repo()->get_applicable_rules( $state_id, $municipality_id, $postcode );
+
+		if ( empty( $rules ) ) {
+			ADMBike_Woo_Locations_Logger::info(
+				'Shipping calculation: no rules matched for postcode {postcode}',
+				array( 'postcode' => $postcode, 'state_id' => $state_id, 'municipality_id' => $municipality_id )
+			);
+			$this->add_no_coverage_message( $postcode );
+			return;
+		}
+
+		$applied_rule = $rules[0];
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::RULE_UNAVAILABLE === $applied_rule['rule_type'] ) {
+			ADMBike_Woo_Locations_Logger::info(
+				'Shipping calculation: postcode {postcode} is marked unavailable',
+				array( 'postcode' => $postcode, 'rule_id' => $applied_rule['id'] ?? 0 )
+			);
+			$this->add_no_coverage_message( $postcode );
+			return;
+		}
+
+		$cost = 0.0;
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::RULE_PAID === $applied_rule['rule_type'] ) {
+			$cost = (float) ( $applied_rule['shipping_cost'] ?? 0 );
+		}
+
+		ADMBike_Woo_Locations_Logger::log_shipping_calculation( $postcode, $rules, $applied_rule, $cost );
+
+		$rate = array(
+			'id'    => $this->get_rate_id(),
+			'label' => $this->title,
+			'cost'  => $cost,
+			'meta_data' => array(
+				'_admbike_rule_id'     => (int) $applied_rule['id'],
+				'_admbike_rule_type'  => $applied_rule['rule_type'],
+				'_admbike_match_type' => $applied_rule['match_type'],
+				'_admbike_postcode'   => $postcode,
+				'_admbike_state_id'   => $state_id,
+				'_admbike_municipality_id' => $municipality_id,
+			),
+		);
+
+		$tax_status = $this->get_option( 'tax_status', 'taxable' );
+		if ( 'none' === $tax_status ) {
+			$rate['taxes'] = false;
+		}
+
+		$this->add_rate( $rate );
+	}
+
+	/**
+	 * Add a "no shipping available" rate with a descriptive message.
+	 *
+	 * @return void
+	 */
+	protected function add_no_shipping_message() {
+		$this->add_rate(
+			array(
+				'id'        => $this->get_rate_id(),
+				'label'     => $this->title . ': ' . __( 'Verifica tu código postal', 'admbike-woo-locations' ),
+				'cost'      => 0,
+				'meta_data' => array(
+					'_admbike_unavailable' => 1,
+				),
+			)
+		);
+	}
+
+	/**
+	 * Add a "no coverage" rate for a postcode with no matching rules.
+	 *
+	 * @param string $postcode The postcode.
+	 * @return void
+	 */
+	protected function add_no_coverage_message( $postcode ) {
+		$this->add_rate(
+			array(
+				'id'        => $this->get_rate_id(),
+				'label'     => $this->title . ': ' . __( 'Sin cobertura en esta ubicación', 'admbike-woo-locations' ),
+				'cost'      => 0,
+				'meta_data' => array(
+					'_admbike_unavailable' => 1,
+					'_admbike_postcode'     => $postcode,
+				),
+			)
+		);
+	}
+
+	/**
+	 * Check if this shipping method is available for a given package.
+	 *
+	 * @param array<string, mixed> $package Shipping package.
+	 * @return bool
+	 */
+	public function is_available( $package ) {
+		if ( ! is_checkout() && ! is_cart() ) {
+			return true;
+		}
+
+		return true;
+	}
+}

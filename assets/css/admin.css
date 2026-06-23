@@ -1,0 +1,45 @@
+<?php
+/**
+ * Admin CSS for ADM Bike Woo Locations.
+ *
+ * @package ADMBike_Woo_Locations
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/* General admin styles */
+.admbike-admin-wrap .form-table th {
+	font-weight: 600;
+}
+
+.admbike-admin-wrap input[type="text"],
+.admbike-admin-wrap input[type="email"],
+.admbike-admin-wrap input[type="number"],
+.admbike-admin-wrap select {
+	max-width: 400px;
+}
+
+/* Column alignment */
+.admbike-admin-wrap .column-id {
+	text-align: center;
+}
+
+.admbike-admin-wrap .column-status {
+	text-align: center;
+}
+
+.admbike-admin-wrap .column-code {
+	font-family: monospace;
+	font-size: 13px;
+}
+
+.admbike-admin-wrap .column-actions .button {
+	margin-right: 4px;
+}
+
+/* Notices */
+.admbike-admin-wrap .notice {
+	margin: 10px 0;
+}

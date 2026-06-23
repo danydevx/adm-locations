@@ -1,0 +1,17 @@
+match_type,state_code,municipality_name,postcode,postcode_from,postcode_to,rule_type,shipping_cost,currency_code,priority,is_active,notes
+municipality,JAL,Guadalajara,,,,free,0,MXN,40,1,Free shipping municipality
+municipality,JAL,Zapopan,,,,free,0,MXN,40,1,Free shipping municipality
+municipality,JAL,Tesistan,,,,free,0,MXN,40,1,Free shipping municipality
+municipality,JAL,Tlajomulco de Zuniga,,,,free,0,MXN,40,1,Free shipping municipality
+municipality,JAL,San Pedro Tlaquepaque,,,,free,0,MXN,40,1,Free shipping municipality
+state,AGS,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,COL,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,ZAC,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,MIC,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,GUA,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,QUE,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,SLP,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,NAY,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,NLE,,,,,paid,0,MXN,90,1,Paid shipping example amount pending definition
+state,JAL,,,,,paid,3000,MXN,120,1,Jalisco outside free municipalities
+postcode_range,SIN,,,82000,82139,paid,0,MXN,30,1,Mazatlan paid coverage example amount pending definition

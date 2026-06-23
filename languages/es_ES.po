@@ -1,0 +1,659 @@
+# Copyright (C) 2024 ADM Bike
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: ADM Bike Woo Locations 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00:00+0000\n"
+"Last-Translator: ADM Bike\n"
+"Language-Team: Spanish\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "ADM Bike Locations"
+msgstr "ADM Bike Ubicaciones"
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "States"
+msgstr "Estados"
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "Municipalities"
+msgstr "Municipios"
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "Postal Codes"
+msgstr "Códigos Postales"
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "Shipping Rules"
+msgstr "Reglas de Envío"
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "View not found."
+msgstr "Vista no encontrada."
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "Security check failed."
+msgstr "Verificación de seguridad fallida."
+
+#: admin/views/states-page.php
+msgid "Back to list"
+msgstr "Volver al listado"
+
+#: admin/views/states-page.php
+msgid "Add New"
+msgstr "Agregar Nuevo"
+
+#: admin/views/states-page.php
+msgid "Search states:"
+msgstr "Buscar estados:"
+
+#: admin/views/states-page.php
+msgid "Search"
+msgstr "Buscar"
+
+#: admin/views/states-page.php
+msgid "Clear"
+msgstr "Limpiar"
+
+#: admin/views/states-page.php
+msgid "No states found."
+msgstr "No se encontraron estados."
+
+#: admin/views/states-page.php
+msgid "ID"
+msgstr "ID"
+
+#: admin/views/states-page.php
+msgid "Code"
+msgstr "Código"
+
+#: admin/views/states-page.php
+msgid "Name"
+msgstr "Nombre"
+
+#: admin/views/states-page.php
+msgid "Status"
+msgstr "Estado"
+
+#: admin/views/states-page.php
+msgid "Actions"
+msgstr "Acciones"
+
+#: admin/views/states-page.php
+msgid "Active"
+msgstr "Activo"
+
+#: admin/views/states-page.php
+msgid "Inactive"
+msgstr "Inactivo"
+
+#: admin/views/states-page.php
+msgid "Edit"
+msgstr "Editar"
+
+#: admin/views/states-page.php
+msgid "Deactivate"
+msgstr "Desactivar"
+
+#: admin/views/states-page.php
+msgid "Activate"
+msgstr "Activar"
+
+#: admin/views/states-page.php
+msgid "Delete"
+msgstr "Eliminar"
+
+#: admin/views/states-page.php
+msgid "Delete this state?"
+msgstr "¿Eliminar este estado?"
+
+#: admin/views/states-page.php
+msgid "Status updated."
+msgstr "Estado actualizado."
+
+#: admin/views/states-page.php
+msgid "State deleted."
+msgstr "Estado eliminado."
+
+#: admin/views/states-page.php
+msgid "Failed to delete state."
+msgstr "Error al eliminar estado."
+
+#: admin/views/states-page.php
+msgid "State created successfully."
+msgstr "Estado creado exitosamente."
+
+#: admin/views/states-page.php
+msgid "State updated successfully."
+msgstr "Estado actualizado exitosamente."
+
+#: admin/views/states-page.php
+msgid "Failed to create state."
+msgstr "Error al crear estado."
+
+#: admin/views/states-page.php
+msgid "Failed to update state."
+msgstr "Error al actualizar estado."
+
+#: admin/views/states-page.php
+msgid "Code and Name are required."
+msgstr "Código y Nombre son requeridos."
+
+#: admin/views/states-page.php
+msgid "A state with this code already exists."
+msgstr "Ya existe un estado con este código."
+
+#: admin/views/states-form.php
+msgid "Edit State"
+msgstr "Editar Estado"
+
+#: admin/views/states-form.php
+msgid "Add State"
+msgstr "Agregar Estado"
+
+#: admin/views/states-form.php
+msgid "State Code"
+msgstr "Código del Estado"
+
+#: admin/views/states-form.php
+msgid "Two-letter or numeric state code (uppercase)."
+msgstr "Código de estado de dos letras o numérico (mayúsculas)."
+
+#: admin/views/states-form.php
+msgid "e.g. JAL"
+msgstr "ej. JAL"
+
+#: admin/views/states-form.php
+msgid "State Name"
+msgstr "Nombre del Estado"
+
+#: admin/views/states-form.php
+msgid "e.g. Jalisco"
+msgstr "ej. Jalisco"
+
+#: admin/views/states-form.php
+msgid "Enable this state for shipping rules"
+msgstr "Habilitar este estado para reglas de envío"
+
+#: admin/views/states-form.php
+msgid "Update State"
+msgstr "Actualizar Estado"
+
+#: admin/views/states-form.php
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: admin/views/municipalities-page.php
+msgid "You must add at least one active state before adding municipalities."
+msgstr "Debes agregar al menos un estado activo antes de agregar municipios."
+
+#: admin/views/municipalities-page.php
+msgid "State and Name are required."
+msgstr "Estado y Nombre son requeridos."
+
+#: admin/views/municipalities-page.php
+msgid "Selected state does not exist."
+msgstr "El estado seleccionado no existe."
+
+#: admin/views/municipalities-page.php
+msgid "A municipality with this name already exists in the selected state."
+msgstr "Ya existe un municipio con este nombre en el estado seleccionado."
+
+#: admin/views/municipalities-page.php
+msgid "Municipality created successfully."
+msgstr "Municipio creado exitosamente."
+
+#: admin/views/municipalities-page.php
+msgid "Municipality updated successfully."
+msgstr "Municipio actualizado exitosamente."
+
+#: admin/views/municipalities-page.php
+msgid "Failed to create municipality."
+msgstr "Error al crear municipio."
+
+#: admin/views/municipalities-page.php
+msgid "Failed to update municipality."
+msgstr "Error al actualizar municipio."
+
+#: admin/views/municipalities-page.php
+msgid "No municipalities found."
+msgstr "No se encontraron municipios."
+
+#: admin/views/municipalities-page.php
+msgid "All states"
+msgstr "Todos los estados"
+
+#: admin/views/municipalities-page.php
+msgid "All statuses"
+msgstr "Todos los estados"
+
+#: admin/views/municipalities-page.php
+msgid "Filter"
+msgstr "Filtrar"
+
+#: admin/views/municipalities-page.php
+msgid "Delete this municipality?"
+msgstr "¿Eliminar este municipio?"
+
+#: admin/views/municipalities-page.php
+msgid "Municipality deleted."
+msgstr "Municipio eliminado."
+
+#: admin/views/municipalities-page.php
+msgid "Failed to delete municipality."
+msgstr "Error al eliminar municipio."
+
+#: admin/views/municipalities-page.php
+msgid "Search by name…"
+msgstr "Buscar por nombre…"
+
+#: admin/views/municipalities-form.php
+msgid "Edit Municipality"
+msgstr "Editar Municipio"
+
+#: admin/views/municipalities-form.php
+msgid "Add Municipality"
+msgstr "Agregar Municipio"
+
+#: admin/views/municipalities-form.php
+msgid "Select a state…"
+msgstr "Selecciona un estado…"
+
+#: admin/views/municipalities-form.php
+msgid "Municipality Name"
+msgstr "Nombre del Municipio"
+
+#: admin/views/municipalities-form.php
+msgid "e.g. Guadalajara"
+msgstr "ej. Guadalajara"
+
+#: admin/views/municipalities-form.php
+msgid "Enable this municipality for shipping rules"
+msgstr "Habilitar este municipio para reglas de envío"
+
+#: admin/views/municipalities-form.php
+msgid "Update Municipality"
+msgstr "Actualizar Municipio"
+
+#: admin/views/postcodes-page.php
+msgid "You must add at least one active state and municipality before adding postal codes."
+msgstr "Debes agregar al menos un estado y municipio activos antes de agregar códigos postales."
+
+#: admin/views/postcodes-page.php
+msgid "Municipality and Postal Code are required."
+msgstr "Municipio y Código Postal son requeridos."
+
+#: admin/views/postcodes-page.php
+msgid "Selected municipality does not exist."
+msgstr "El municipio seleccionado no existe."
+
+#: admin/views/postcodes-page.php
+msgid "This postal code already exists in the selected municipality."
+msgstr "Este código postal ya existe en el municipio seleccionado."
+
+#: admin/views/postcodes-page.php
+msgid "Postal code created successfully."
+msgstr "Código postal creado exitosamente."
+
+#: admin/views/postcodes-page.php
+msgid "Postal code updated successfully."
+msgstr "Código postal actualizado exitosamente."
+
+#: admin/views/postcodes-page.php
+msgid "Failed to create postal code."
+msgstr "Error al crear código postal."
+
+#: admin/views/postcodes-page.php
+msgid "Failed to update postal code."
+msgstr "Error al actualizar código postal."
+
+#: admin/views/postcodes-page.php
+msgid "No postal codes found."
+msgstr "No se encontraron códigos postales."
+
+#: admin/views/postcodes-page.php
+msgid "All municipalities"
+msgstr "Todos los municipios"
+
+#: admin/views/postcodes-page.php
+msgid "Delete this postal code?"
+msgstr "¿Eliminar este código postal?"
+
+#: admin/views/postcodes-page.php
+msgid "Postal code deleted."
+msgstr "Código postal eliminado."
+
+#: admin/views/postcodes-page.php
+msgid "Failed to delete postal code."
+msgstr "Error al eliminar código postal."
+
+#: admin/views/postcodes-page.php
+msgid "Search by postal code…"
+msgstr "Buscar por código postal…"
+
+#: admin/views/postcodes-form.php
+msgid "Edit Postal Code"
+msgstr "Editar Código Postal"
+
+#: admin/views/postcodes-form.php
+msgid "Add Postal Code"
+msgstr "Agregar Código Postal"
+
+#: admin/views/postcodes-form.php
+msgid "Select a municipality…"
+msgstr "Selecciona un municipio…"
+
+#: admin/views/postcodes-form.php
+msgid "Select a state first to load its municipalities."
+msgstr "Selecciona un estado primero para cargar sus municipios."
+
+#: admin/views/postcodes-form.php
+msgid "Postal Code"
+msgstr "Código Postal"
+
+#: admin/views/postcodes-form.php
+msgid "e.g. 44100"
+msgstr "ej. 44100"
+
+#: admin/views/postcodes-form.php
+msgid "Digits and hyphens only."
+msgstr "Solo dígitos y guiones."
+
+#: admin/views/postcodes-form.php
+msgid "Enable this postal code for shipping rules"
+msgstr "Habilitar este código postal para reglas de envío"
+
+#: admin/views/postcodes-form.php
+msgid "Update Postal Code"
+msgstr "Actualizar Código Postal"
+
+#: admin/views/shipping-page.php
+msgid "Shipping Rules Preview"
+msgstr "Vista Previa de Reglas de Envío"
+
+#: admin/views/shipping-page.php
+msgid "No matching rules found for the selected location."
+msgstr "No se encontraron reglas para la ubicación seleccionada."
+
+#: admin/views/shipping-page.php
+msgid "Rules matched (ordered by priority):"
+msgstr "Reglas coincidentes (ordenadas por prioridad):"
+
+#: admin/views/shipping-page.php
+msgid "Match Type"
+msgstr "Tipo de Coincidencia"
+
+#: admin/views/shipping-page.php
+msgid "Scope"
+msgstr "Alcance"
+
+#: admin/views/shipping-page.php
+msgid "Rule Type"
+msgstr "Tipo de Regla"
+
+#: admin/views/shipping-page.php
+msgid "Cost"
+msgstr "Costo"
+
+#: admin/views/shipping-page.php
+msgid "Priority"
+msgstr "Prioridad"
+
+#: admin/views/shipping-page.php
+msgid "Notes"
+msgstr "Notas"
+
+#: admin/views/shipping-page.php
+msgid "FREE"
+msgstr "GRATIS"
+
+#: admin/views/shipping-page.php
+msgid "PAID"
+msgstr "CON COSTO"
+
+#: admin/views/shipping-page.php
+msgid "BLOCKED"
+msgstr "BLOQUEADO"
+
+#: admin/views/shipping-page.php
+msgid "Free"
+msgstr "Gratis"
+
+#: admin/views/shipping-page.php
+msgid "Blocked"
+msgstr "Bloqueado"
+
+#: admin/views/shipping-page.php
+msgid "The first matching rule (row 1) will be applied at checkout. A blocked rule prevents checkout for that location."
+msgstr "La primera regla coincidente (fila 1) se aplicará en el checkout. Una regla bloqueada evita el checkout para esa ubicación."
+
+#: admin/views/shipping-page.php
+msgid "No rules found."
+msgstr "No se encontraron reglas."
+
+#: admin/views/shipping-page.php
+msgid "All rule types"
+msgstr "Todos los tipos de regla"
+
+#: admin/views/shipping-page.php
+msgid "All match types"
+msgstr "Todos los tipos de coincidencia"
+
+#: admin/views/shipping-page.php
+msgid "Search by notes, postcode…"
+msgstr "Buscar por notas, código postal…"
+
+#: admin/views/shipping-page.php
+msgid "Delete this rule?"
+msgstr "¿Eliminar esta regla?"
+
+#: admin/views/shipping-page.php
+msgid "Rule deleted."
+msgstr "Regla eliminada."
+
+#: admin/views/shipping-page.php
+msgid "Failed to delete rule."
+msgstr "Error al eliminar regla."
+
+#: admin/views/shipping-page.php
+msgid "Edit Shipping Rule"
+msgstr "Editar Regla de Envío"
+
+#: admin/views/shipping-page.php
+msgid "Add Shipping Rule"
+msgstr "Agregar Regla de Envío"
+
+#: admin/views/shipping-page.php
+msgid "Select match type…"
+msgstr "Selecciona tipo de coincidencia…"
+
+#: admin/views/shipping-page.php
+msgid "Defines which geographic areas this rule applies to."
+msgstr "Define a qué áreas geográficas se aplica esta regla."
+
+#: admin/views/shipping-page.php
+msgid "Location Scope"
+msgstr "Alcance de Ubicación"
+
+#: admin/views/shipping-page.php
+msgid "State"
+msgstr "Estado"
+
+#: admin/views/shipping-page.php
+msgid "Municipality"
+msgstr "Municipio"
+
+#: admin/views/shipping-page.php
+msgid "Postcode (exact)"
+msgstr "Código Postal (exacto)"
+
+#: admin/views/shipping-page.php
+msgid "Postcode Range"
+msgstr "Rango de Código Postal"
+
+#: admin/views/shipping-page.php
+msgid "State is required for state-level rules."
+msgstr "Estado es requerido para reglas de nivel estado."
+
+#: admin/views/shipping-page.php
+msgid "State and Municipality are required for municipality-level rules."
+msgstr "Estado y Municipio son requeridos para reglas de nivel municipio."
+
+#: admin/views/shipping-page.php
+msgid "Postcode is required for postcode-level rules."
+msgstr "Código Postal es requerido para reglas de nivel código postal."
+
+#: admin/views/shipping-page.php
+msgid "Postcode range (from/to) is required for postcode range rules."
+msgstr "Rango de código postal (de/a) es requerido para reglas de rango."
+
+#: admin/views/shipping-page.php
+msgid "Free Shipping"
+msgstr "Envío Gratis"
+
+#: admin/views/shipping-page.php
+msgid "Paid Shipping"
+msgstr "Envío con Costo"
+
+#: admin/views/shipping-page.php
+msgid "Unavailable / Blocked"
+msgstr "No Disponible / Bloqueado"
+
+#: admin/views/shipping-page.php
+msgid "Shipping Cost"
+msgstr "Costo de Envío"
+
+#: admin/views/shipping-page.php
+msgid "Currency"
+msgstr "Moneda"
+
+#: admin/views/shipping-page.php
+msgid "Lower number = higher precedence. E.g. 10 beats 50."
+msgstr "Número menor = mayor precedencia. Ej. 10 supera a 50."
+
+#: admin/views/shipping-page.php
+msgid "Enable this rule"
+msgstr "Habilitar esta regla"
+
+#: admin/views/shipping-page.php
+msgid "Internal notes…"
+msgstr "Notas internas…"
+
+#: admin/views/shipping-page.php
+msgid "Update Rule"
+msgstr "Actualizar Regla"
+
+#: admin/views/shipping-page.php
+msgid "Rule created successfully."
+msgstr "Regla creada exitosamente."
+
+#: admin/views/shipping-page.php
+msgid "Rule updated successfully."
+msgstr "Regla actualizada exitosamente."
+
+#: admin/views/shipping-page.php
+msgid "Failed to create rule."
+msgstr "Error al crear regla."
+
+#: admin/views/shipping-page.php
+msgid "Failed to update rule."
+msgstr "Error al actualizar regla."
+
+#: admin/views/shipping-page.php
+msgid "Invalid match type or rule type."
+msgstr "Tipo de coincidencia o tipo de regla inválido."
+
+#: includes/class-admbike-woo-locations-rest-api.php
+msgid "Postcode is required."
+msgstr "Código postal es requerido."
+
+#: includes/class-admbike-woo-locations-rest-api.php
+msgid "No coverage for this postcode."
+msgstr "Sin cobertura para este código postal."
+
+#: includes/class-admbike-woo-locations-rest-api.php
+msgid "No shipping rule found for this location."
+msgstr "No se encontró regla de envío para esta ubicación."
+
+#: includes/class-admbike-woo-locations-rest-api.php
+msgid "Sorry, we do not deliver to this location."
+msgstr "Lo sentimos, no hacemos envíos a esta ubicación."
+
+#: includes/class-admbike-woo-locations-rest-api.php
+msgid "Free shipping available!"
+msgstr "¡Envío gratis disponible!"
+
+#: includes/class-admbike-woo-locations-rest-api.php
+msgid "Shipping cost: %s"
+msgstr "Costo de envío: %s"
+
+#: includes/class-admbike-woo-locations-checkout.php
+msgid "Cargando opciones de envío…"
+msgstr "Cargando opciones de envío…"
+
+#: includes/class-admbike-woo-locations-shipping-method.php
+msgid "ENVÍO GRATIS en:"
+msgstr "ENVÍO GRATIS en:"
+
+#: includes/class-admbike-woo-locations-shipping-method.php
+msgid "Verifica tu código postal"
+msgstr "Verifica tu código postal"
+
+#: includes/class-admbike-woo-locations-shipping-method.php
+msgid "Sin cobertura en esta ubicación"
+msgstr "Sin cobertura en esta ubicación"
+
+#: includes/class-admbike-woo-locations-shipping-method.php
+msgid "ENVÍOS CON COSTO a todo el estado de:"
+msgstr "ENVÍOS CON COSTO a todo el estado de:"
+
+#: includes/class-admbike-woo-locations-shipping-info.php
+msgid "INFORMACIÓN DE ENVÍOS ADM BIKE"
+msgstr "INFORMACIÓN DE ENVÍOS ADM BIKE"
+
+#: includes/class-admbike-woo-locations-shipping-info.php
+msgid "Costo de envío:"
+msgstr "Costo de envío:"
+
+#: includes/class-admbike-woo-locations-shipping-info.php
+msgid "Jalisco (fuera de zonas gratuitas):"
+msgstr "Jalisco (fuera de zonas gratuitas):"
+
+#: includes/class-admbike-woo-locations-shipping-info.php
+msgid "Mazatlán, Sinaloa:"
+msgstr "Mazatlán, Sinaloa:"
+
+#: includes/class-admbike-woo-locations-shipping-info.php
+msgid "Cobertura dentro de la ciudad"
+msgstr "Cobertura dentro de la ciudad"
+
+#: includes/class-admbike-woo-locations-shipping-info.php
+msgid "Aplican costos de envío"
+msgstr "Aplican costos de envío"
+
+#: assets/js/checkout.js
+msgid "Selecciona un estado…"
+msgstr "Selecciona un estado…"
+
+#: assets/js/checkout.js
+msgid "Selecciona un municipio…"
+msgstr "Selecciona un municipio…"
+
+#: assets/js/checkout.js
+msgid "Selecciona un código postal…"
+msgstr "Selecciona un código postal…"
+
+#: assets/js/checkout.js
+msgid "No contamos con cobertura para esta ubicación."
+msgstr "No contamos con cobertura para esta ubicación."
+
+#: assets/js/checkout.js
+msgid "Cargando…"
+msgstr "Cargando…"

@@ -1,0 +1,12 @@
+state_code,municipality_name,postcode,is_active
+JAL,Guadalajara,44100,1
+JAL,Guadalajara,44110,1
+JAL,Zapopan,45010,1
+JAL,Zapopan,45019,1
+JAL,Zapopan,45030,1
+JAL,Zapopan,45200,1
+JAL,Tesistan,45210,1
+JAL,Tlajomulco de Zuniga,45640,1
+JAL,San Pedro Tlaquepaque,45500,1
+SIN,Mazatlan,82000,1
+SIN,Mazatlan,82139,1

@@ -1,0 +1,213 @@
+<?php
+/**
+ * States admin view.
+ *
+ * @package ADMBike_Woo_Locations
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+$admin = admbike_woo_locations_admin();
+
+$states_repo = new ADMBike_Woo_Locations_State_Repository();
+
+$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : 'list';
+$id     = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
+
+if ( 'add' === $action || 'edit' === $action ) {
+	$item = null;
+	if ( 'edit' === $action && $id > 0 ) {
+		$item = $states_repo->get_by_id( $id );
+		if ( ! $item ) {
+			wp_die( esc_html__( 'State not found.', 'admbike-woo-locations' ) );
+		}
+	}
+	?>
+<div class="wrap">
+	<h1 class="wp-heading-inline"><?php echo esc_html( 'edit' === $action ? __( 'Edit State', 'admbike-woo-locations' ) : __( 'Add State', 'admbike-woo-locations' ) ); ?></h1>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG ) ); ?>" class="page-title-action"><?php esc_html_e( 'Back to list', 'admbike-woo-locations' ); ?></a>
+	<hr class="wp-header-end">
+
+	<?php
+	if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['admbike_state_nonce'] ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['admbike_state_nonce'] ) ), 'admbike_save_state' ) || ! current_user_can( ADMBike_Woo_Locations_Admin::CAPABILITY ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+		}
+
+		$code = isset( $_POST['code'] ) ? strtoupper( sanitize_text_field( (string) $_POST['code'] ) ) : '';
+		$name = isset( $_POST['name'] ) ? sanitize_text_field( (string) $_POST['name'] ) : '';
+		$active = isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 0;
+
+		if ( empty( $code ) || empty( $name ) ) {
+			$error_msg = __( 'Code and Name are required.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
+			return;
+		}
+
+		$existing_code = $states_repo->get_by_code( $code );
+		if ( $existing_code && ( 'add' === $_POST['_action'] || ( 'edit' === $_POST['_action'] && (int) $existing_code['id'] !== $id ) ) ) {
+			$error_msg = __( 'A state with this code already exists.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
+			return;
+		}
+
+		$data = array(
+			'code'      => $code,
+			'name'      => $name,
+			'is_active' => $active,
+		);
+
+		if ( 'add' === $_POST['_action'] ) {
+			$result = $states_repo->create( $data );
+			if ( $result ) {
+				$admin->redirect_with_message( 'success', urlencode( __( 'State created successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
+			} else {
+				$error_msg = __( 'Failed to create state.', 'admbike-woo-locations' );
+			}
+		} else {
+			$result = $states_repo->update( $id, $data );
+			if ( $result ) {
+				$admin->redirect_with_message( 'success', urlencode( __( 'State updated successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
+			} else {
+				$error_msg = __( 'Failed to update state.', 'admbike-woo-locations' );
+			}
+		}
+
+		include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
+		return;
+	}
+
+	include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
+	return;
+}
+
+if ( 'delete' === $action ) {
+	if ( ! $admin->verify_nonce( 'admbike_delete_state' ) ) {
+		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	}
+
+	$result = $states_repo->delete( $id );
+	$admin->redirect_with_message( $result ? 'success' : 'error', urlencode( $result ? __( 'State deleted.', 'admbike-woo-locations' ) : __( 'Failed to delete state.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
+	return;
+}
+
+if ( 'toggle' === $action ) {
+	if ( ! $admin->verify_nonce( 'admbike_toggle_state' ) ) {
+		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	}
+
+	$item = $states_repo->get_by_id( $id );
+	if ( $item ) {
+		$states_repo->update( $id, array( 'is_active' => $item['is_active'] ? 0 : 1 ) );
+	}
+
+	$admin->redirect_with_message( 'success', urlencode( __( 'Status updated.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
+	return;
+}
+
+$admin->render_admin_messages();
+
+$paged    = isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1;
+$search   = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+$per_page = 20;
+
+$total  = $states_repo->count_all( $search );
+$items  = $states_repo->get_paginated( 'name ASC', $per_page, $paged, $search );
+$total_pages = max( 1, ceil( $total / $per_page ) );
+
+?>
+<div class="wrap">
+	<h1 class="wp-heading-inline"><?php esc_html_e( 'States', 'admbike-woo-locations' ); ?></h1>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=add' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New', 'admbike-woo-locations' ); ?></a>
+	<hr class="wp-header-end">
+
+	<form method="get" action="">
+		<input type="hidden" name="page" value="<?php echo esc_attr( ADMBike_Woo_Locations_Admin::STATES_SLUG ); ?>">
+		<p class="search-box">
+			<label for="post-search-input"><?php esc_html_e( 'Search states:', 'admbike-woo-locations' ); ?></label>
+			<input type="search" id="post-search-input" name="s" value="<?php echo esc_attr( $search ); ?>">
+			<input type="submit" class="button" value="<?php esc_attr_e( 'Search', 'admbike-woo-locations' ); ?>">
+			<?php if ( $search ) : ?>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Clear', 'admbike-woo-locations' ); ?></a>
+			<?php endif; ?>
+		</p>
+	</form>
+
+	<?php if ( empty( $items ) ) : ?>
+		<p><?php esc_html_e( 'No states found.', 'admbike-woo-locations' ); ?></p>
+	<?php else : ?>
+		<table class="wp-list-table widefat fixed striped">
+			<thead>
+				<tr>
+					<th scope="col" class="column-id" style="width:60px;"><?php esc_html_e( 'ID', 'admbike-woo-locations' ); ?></th>
+					<th scope="col" class="column-code"><?php esc_html_e( 'Code', 'admbike-woo-locations' ); ?></th>
+					<th scope="col" class="column-name"><?php esc_html_e( 'Name', 'admbike-woo-locations' ); ?></th>
+					<th scope="col" class="column-status" style="width:100px;"><?php esc_html_e( 'Status', 'admbike-woo-locations' ); ?></th>
+					<th scope="col" class="column-actions" style="width:160px;"><?php esc_html_e( 'Actions', 'admbike-woo-locations' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php
+				foreach ( $items as $item ) :
+					$edit_url   = wp_nonce_url(
+						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=edit&id=' . absint( $item['id'] ) ),
+						'admbike_edit_state_' . $item['id'],
+						'_wpnonce'
+					);
+					$delete_url = wp_nonce_url(
+						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=delete&id=' . absint( $item['id'] ) ),
+						'admbike_delete_state',
+						'_wpnonce'
+					);
+					$toggle_url = wp_nonce_url(
+						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=toggle&id=' . absint( $item['id'] ) ),
+						'admbike_toggle_state',
+						'_wpnonce'
+					);
+					?>
+					<tr>
+						<td class="column-id"><?php echo esc_html( $item['id'] ); ?></td>
+						<td class="column-code"><strong><?php echo esc_html( $item['code'] ); ?></strong></td>
+						<td class="column-name"><?php echo esc_html( $item['name'] ); ?></td>
+						<td class="column-status">
+							<?php if ( $item['is_active'] ) : ?>
+								<span class="dashicons dashicons-yes-alt" style="color:#2271b1;" title="<?php esc_attr_e( 'Active', 'admbike-woo-locations' ); ?>"></span>
+							<?php else : ?>
+								<span class="dashicons dashicons-dismiss" style="color:#d63638;" title="<?php esc_attr_e( 'Inactive', 'admbike-woo-locations' ); ?>"></span>
+							<?php endif; ?>
+						</td>
+						<td class="column-actions">
+							<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'admbike-woo-locations' ); ?></a>
+							<a href="<?php echo esc_url( $toggle_url ); ?>" class="button button-small"><?php echo esc_html( $item['is_active'] ? __( 'Deactivate', 'admbike-woo-locations' ) : __( 'Activate', 'admbike-woo-locations' ) ); ?></a>
+							<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('<?php esc_attr_e( 'Delete this state?', 'admbike-woo-locations' ); ?>');"><?php esc_html_e( 'Delete', 'admbike-woo-locations' ); ?></a>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<?php if ( $total_pages > 1 ) : ?>
+			<div class="tablenav bottom">
+				<div class="alignleft actions">
+					<?php
+					$base_url = admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG );
+					if ( $search ) {
+						$base_url = add_query_arg( 's', urlencode( $search ), $base_url );
+					}
+					?>
+					<span class="displaying-num"><?php printf( esc_html( _n( '%s item', '%s items', $total, 'admbike-woo-locations' ) ), number_format_i18n( $total ) ); ?></span>
+					<?php if ( $paged > 1 ) : ?>
+						<a class="button" href="<?php echo esc_url( add_query_arg( 'paged', $paged - 1, $base_url ) ); ?>">«</a>
+					<?php endif; ?>
+					<span class="button disabled"><?php echo esc_html( $paged ); ?> / <?php echo esc_html( $total_pages ); ?></span>
+					<?php if ( $paged < $total_pages ) : ?>
+						<a class="button" href="<?php echo esc_url( add_query_arg( 'paged', $paged + 1, $base_url ) ); ?>">»</a>
+					<?php endif; ?>
+				</div>
+			</div>
+		<?php endif; ?>
+	<?php endif; ?>
+</div>
+<?php
