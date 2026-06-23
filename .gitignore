@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Composer
+/vendor/
+
+# Node
+/node_modules/
+
+# Build
+/dist/
+/build/
+
+# OpenCode
+.opencode/cache/
+.opencode/tmp/
+.opencode/logs/
+
+# WordPress
+wp-config.php
+
+# Env
+.env
+.env.*
