@@ -100,6 +100,9 @@ abstract class ADMBike_Woo_Locations_Abstract_Repository {
 		$where_values = array();
 
 		foreach ( $where as $column => $value ) {
+			if ( '_offset' === $column ) {
+				continue;
+			}
 			$where_parts[]  = sanitize_key( $column ) . ' = %s';
 			$where_values[] = (string) $value;
 		}

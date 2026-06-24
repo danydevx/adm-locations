@@ -1,10 +1,6 @@
-<?php
-/**
- * Admin JS for ADM Bike Woo Locations.
- *
- * @package ADMBike_Woo_Locations
+/* ADM Bike Woo Locations admin JS.
+ * Intentionally empty for now.
  */
-
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+(function () {
+	'use strict';
+}());

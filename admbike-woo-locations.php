@@ -32,6 +32,7 @@ require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-rule-repository.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-rest-api.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-checkout.php';
+require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-blocks.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-method.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-info.php';
@@ -64,6 +65,23 @@ new ADMBike_Woo_Locations_Shipping();
 if ( ! is_admin() ) {
 	new ADMBike_Woo_Locations_Checkout();
 	new ADMBike_Woo_Locations_Shipping_Info();
+
+	add_action(
+		'wp_loaded',
+		function () {
+			if ( ! class_exists( 'ADMBike_Woo_Locations_Blocks' ) ) {
+				return;
+			}
+
+			try {
+				if ( ADMBike_Woo_Locations_Blocks::is_blocks_checkout() ) {
+					new ADMBike_Woo_Locations_Blocks();
+				}
+			} catch ( Throwable $e ) {
+				error_log( 'ADMBike Woo Locations Blocks init error: ' . $e->getMessage() );
+			}
+		}
+	);
 }
 
 /**

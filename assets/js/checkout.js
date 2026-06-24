@@ -183,6 +183,92 @@
 		} );
 	}
 
+	function getStateCode( data, stateId ) {
+		if ( ! data || ! data.states ) {
+			return '';
+		}
+
+		for ( var i = 0; i < data.states.length; i++ ) {
+			if ( parseInt( data.states[ i ].id, 10 ) === parseInt( stateId, 10 ) ) {
+				return data.states[ i ].code || '';
+			}
+		}
+
+		return '';
+	}
+
+	function syncWooFields( data, stateId, municipalityName, postcode ) {
+		var stateCode = getStateCode( data, stateId );
+
+		if ( stateCode ) {
+			$( '#billing_state, #shipping_state' ).val( stateCode ).trigger( 'change' );
+		}
+
+		if ( municipalityName ) {
+			$( '#billing_city, #shipping_city' ).val( municipalityName ).trigger( 'change' );
+		}
+
+		if ( postcode ) {
+			$( '#billing_postcode, #shipping_postcode' ).val( postcode ).trigger( 'change' );
+		}
+
+		$( document.body ).trigger( 'update_checkout' );
+	}
+
+	function setPickupFieldsVisible( visible ) {
+		var $rows = $( '#admbike_state_id_field, #admbike_municipality_id_field, #admbike_postcode_select_field, #admbike_coverage_info_field' );
+
+		if ( visible ) {
+			$rows.show().removeClass( 'admbike-hidden' );
+			return;
+		}
+
+		$rows.hide().addClass( 'admbike-hidden' );
+	}
+
+	function getStateCode( data, stateId ) {
+		if ( ! data || ! data.states ) {
+			return '';
+		}
+
+		for ( var i = 0; i < data.states.length; i++ ) {
+			if ( parseInt( data.states[ i ].id, 10 ) === parseInt( stateId, 10 ) ) {
+				return data.states[ i ].code || '';
+			}
+		}
+
+		return '';
+	}
+
+	function syncWooFields( data, stateId, municipalityName, postcode ) {
+		var stateCode = getStateCode( data, stateId );
+
+		if ( stateCode ) {
+			$( '#billing_state, #shipping_state' ).val( stateCode ).trigger( 'change' );
+		}
+
+		if ( municipalityName ) {
+			$( '#billing_city, #shipping_city' ).val( municipalityName ).trigger( 'change' );
+		}
+
+		if ( postcode ) {
+			$( '#billing_postcode, #shipping_postcode' ).val( postcode ).trigger( 'change' );
+		}
+
+		$( document.body ).trigger( 'update_checkout' );
+	}
+
+	function setPickupFieldsVisible( visible ) {
+		var $rows = $( '#admbike_state_id_field, #admbike_municipality_id_field, #admbike_postcode_select_field, #admbike_coverage_info_field' );
+
+		if ( visible ) {
+			$rows.show().removeClass( 'admbike-hidden' );
+			return;
+		}
+
+		$rows.hide().addClass( 'admbike-hidden' );
+	}
+
 	// ─── Overlay ──────────────────────────────────────────────────────────────
 
 	function showOverlay() {
@@ -209,14 +295,20 @@
 		var $postcodeSelect    = $( '#admbike_postcode_select' );
 		var $coverageInfo      = $( '#admbike_coverage_info' );
 		var $coverageContainer = $( '.admbike-coverage-info' );
+		var $pickupToggle      = $( '#admbike_pickup_toggle' );
 
 		if ( ! $stateSelect.length ) {
 			return;
 		}
 
-		// Show our custom fields and hide native ones.
-		$( '#billing_postcode_field' ).hide().find( 'input' ).removeClass( 'validate-required' );
-		$( '#billing_city_field' ).hide().find( 'input' ).removeClass( 'validate-required' );
+		setPickupFieldsVisible( $pickupToggle.length ? $pickupToggle.is( ':checked' ) : true );
+
+		if ( $pickupToggle.length ) {
+			$pickupToggle.on( 'change', function () {
+				setPickupFieldsVisible( $( this ).is( ':checked' ) );
+				$( document.body ).trigger( 'update_checkout' );
+			} );
+		}
 
 		loadLocationData( function ( data ) {
 			if ( ! data ) {
@@ -241,6 +333,7 @@
 				if ( ! stateId ) {
 					$municipalitySelect.closest( '.form-row' ).addClass( 'admbike-hidden' );
 					$postcodeSelect.closest( '.form-row' ).addClass( 'admbike-hidden' );
+					syncWooFields( data, '', '', '' );
 					return;
 				}
 
@@ -272,6 +365,7 @@
 				);
 				$municipalitySelect.closest( '.form-row' ).removeClass( 'admbike-hidden' );
 				$postcodeSelect.closest( '.form-row' ).addClass( 'admbike-hidden' );
+				syncWooFields( data, stateId, '', '' );
 			} );
 
 			$municipalitySelect.on( 'change', function () {
@@ -283,6 +377,7 @@
 
 				if ( ! municipalityId ) {
 					$postcodeSelect.closest( '.form-row' ).addClass( 'admbike-hidden' );
+					syncWooFields( data, $stateSelect.val(), '', '' );
 					return;
 				}
 
@@ -312,6 +407,7 @@
 					config.i18n.selectPostcode
 				);
 				$postcodeSelect.closest( '.form-row' ).removeClass( 'admbike-hidden' );
+				syncWooFields( data, $stateSelect.val(), $( this ).find( 'option:selected' ).text(), '' );
 			} );
 
 			$postcodeSelect.on( 'change', function () {
@@ -322,10 +418,8 @@
 					return;
 				}
 
-				// Update native billing postcode/city fields so WooCommerce doesn't complain.
-				$( '#billing_postcode' ).val( postcode ).trigger( 'change' );
 				var municipalityName = $municipalitySelect.find( 'option:selected' ).text();
-				$( '#billing_city' ).val( municipalityName ).trigger( 'change' );
+				syncWooFields( data, $stateSelect.val(), municipalityName, postcode );
 
 				showOverlay();
 				checkCoverage( postcode, $coverageContainer );

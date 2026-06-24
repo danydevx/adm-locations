@@ -95,16 +95,9 @@ class ADMBike_Woo_Locations_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		$allowed_pages = array(
-			self::STATES_SLUG,
-			self::MUNICIPALITIES_SLUG,
-			self::POSTCODES_SLUG,
-			self::SHIPPING_SLUG,
-		);
+		$hook = (string) $hook;
 
-		$screen = get_current_screen();
-
-		if ( ! in_array( $screen->id, $allowed_pages, true ) ) {
+		if ( false === strpos( $hook, self::STATES_SLUG ) && false === strpos( $hook, self::MUNICIPALITIES_SLUG ) && false === strpos( $hook, self::POSTCODES_SLUG ) && false === strpos( $hook, self::SHIPPING_SLUG ) ) {
 			return;
 		}
 

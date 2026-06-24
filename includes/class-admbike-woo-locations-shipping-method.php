@@ -191,7 +191,6 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 
 		if ( empty( $postcode ) ) {
 			ADMBike_Woo_Locations_Logger::info( 'Shipping calculation: no postcode found in package' );
-			$this->add_no_shipping_message();
 			return;
 		}
 
@@ -202,7 +201,6 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 				'Shipping calculation: postcode {postcode} not found in locations database',
 				array( 'postcode' => $postcode )
 			);
-			$this->add_no_coverage_message( $postcode );
 			return;
 		}
 
@@ -226,7 +224,6 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 				'Shipping calculation: no rules matched for postcode {postcode}',
 				array( 'postcode' => $postcode, 'state_id' => $state_id, 'municipality_id' => $municipality_id )
 			);
-			$this->add_no_coverage_message( $postcode );
 			return;
 		}
 
@@ -237,7 +234,6 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 				'Shipping calculation: postcode {postcode} is marked unavailable',
 				array( 'postcode' => $postcode, 'rule_id' => $applied_rule['id'] ?? 0 )
 			);
-			$this->add_no_coverage_message( $postcode );
 			return;
 		}
 
@@ -257,6 +253,8 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 				'_admbike_rule_id'     => (int) $applied_rule['id'],
 				'_admbike_rule_type'  => $applied_rule['rule_type'],
 				'_admbike_match_type' => $applied_rule['match_type'],
+				'_admbike_rule_priority' => isset( $applied_rule['priority'] ) ? (int) $applied_rule['priority'] : 100,
+				'_admbike_rule_specificity' => $this->get_match_specificity( (string) $applied_rule['match_type'] ),
 				'_admbike_postcode'   => $postcode,
 				'_admbike_state_id'   => $state_id,
 				'_admbike_municipality_id' => $municipality_id,
@@ -272,44 +270,6 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
-	 * Add a "no shipping available" rate with a descriptive message.
-	 *
-	 * @return void
-	 */
-	protected function add_no_shipping_message() {
-		$this->add_rate(
-			array(
-				'id'        => $this->get_rate_id(),
-				'label'     => $this->title . ': ' . __( 'Verifica tu código postal', 'admbike-woo-locations' ),
-				'cost'      => 0,
-				'meta_data' => array(
-					'_admbike_unavailable' => 1,
-				),
-			)
-		);
-	}
-
-	/**
-	 * Add a "no coverage" rate for a postcode with no matching rules.
-	 *
-	 * @param string $postcode The postcode.
-	 * @return void
-	 */
-	protected function add_no_coverage_message( $postcode ) {
-		$this->add_rate(
-			array(
-				'id'        => $this->get_rate_id(),
-				'label'     => $this->title . ': ' . __( 'Sin cobertura en esta ubicación', 'admbike-woo-locations' ),
-				'cost'      => 0,
-				'meta_data' => array(
-					'_admbike_unavailable' => 1,
-					'_admbike_postcode'     => $postcode,
-				),
-			)
-		);
-	}
-
-	/**
 	 * Check if this shipping method is available for a given package.
 	 *
 	 * @param array<string, mixed> $package Shipping package.
@@ -321,5 +281,33 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Convert a match type into a specificity score.
+	 *
+	 * Lower numbers are more specific.
+	 *
+	 * @param string $match_type Match type.
+	 * @return int
+	 */
+	protected function get_match_specificity( $match_type ) {
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type ) {
+			return 1;
+		}
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE_RANGE === $match_type ) {
+			return 2;
+		}
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_MUNICIPALITY === $match_type ) {
+			return 3;
+		}
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_STATE === $match_type ) {
+			return 4;
+		}
+
+		return 99;
 	}
 }

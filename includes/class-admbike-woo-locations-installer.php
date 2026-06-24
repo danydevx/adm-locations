@@ -9,6 +9,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! defined( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION' ) ) {
+	define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.0.0' );
+}
+
 class ADMBike_Woo_Locations_Installer {
 
 	/**

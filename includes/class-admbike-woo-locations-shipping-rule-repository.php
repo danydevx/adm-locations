@@ -360,40 +360,174 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function get_applicable_rules( $state_id = null, $municipality_id = null, $postcode = null ) {
-		$sql = "SELECT * FROM {$this->table_name} WHERE is_active = 1";
-		$parts = array();
-		$values = array();
+		$state_id        = absint( $state_id );
+		$municipality_id = absint( $municipality_id );
+		$postcode        = preg_replace( '/[^0-9A-Za-z-]/', '', (string) $postcode );
 
-		if ( null !== $state_id ) {
-			$parts[] = 'state_id = %d';
-			$values[] = absint( $state_id );
+		$candidates = array();
+
+		if ( $postcode !== '' ) {
+			$postcode_rows = $this->wpdb->get_results(
+				$this->wpdb->prepare(
+					"SELECT * FROM {$this->table_name} WHERE is_active = 1 AND match_type = %s AND postcode_id IN (SELECT id FROM {$this->wpdb->prefix}admbike_locations_postcodes WHERE postcode = %s)",
+					self::MATCH_POSTCODE,
+					$postcode
+				),
+				ARRAY_A
+			);
+
+			if ( is_array( $postcode_rows ) ) {
+				$candidates = array_merge( $candidates, $postcode_rows );
+			}
+
+			$range_rows = $this->wpdb->get_results(
+				$this->wpdb->prepare(
+					"SELECT * FROM {$this->table_name} WHERE is_active = 1 AND match_type = %s AND postcode_from <= %s AND postcode_to >= %s",
+					self::MATCH_POSTCODE_RANGE,
+					$postcode,
+					$postcode
+				),
+				ARRAY_A
+			);
+
+			if ( is_array( $range_rows ) ) {
+				$candidates = array_merge( $candidates, $range_rows );
+			}
 		}
 
-		if ( null !== $municipality_id ) {
-			$parts[] = 'municipality_id = %d';
-			$values[] = absint( $municipality_id );
+		if ( $municipality_id > 0 ) {
+			$municipality_rows = $this->wpdb->get_results(
+				$this->wpdb->prepare(
+					"SELECT * FROM {$this->table_name} WHERE is_active = 1 AND match_type = %s AND municipality_id = %d",
+					self::MATCH_MUNICIPALITY,
+					$municipality_id
+				),
+				ARRAY_A
+			);
+
+			if ( is_array( $municipality_rows ) ) {
+				$candidates = array_merge( $candidates, $municipality_rows );
+			}
 		}
 
-		if ( null !== $postcode ) {
-			$pc = preg_replace( '/[^0-9A-Za-z-]/', '', (string) $postcode );
-			$parts[] = '(match_type IN ("state","municipality") OR (match_type = "postcode" AND postcode_from = %s) OR (match_type = "postcode_range" AND postcode_from <= %s AND postcode_to >= %s))';
-			$values[] = $pc;
-			$values[] = $pc;
-			$values[] = $pc;
+		if ( $state_id > 0 ) {
+			$state_rows = $this->wpdb->get_results(
+				$this->wpdb->prepare(
+					"SELECT * FROM {$this->table_name} WHERE is_active = 1 AND match_type = %s AND state_id = %d",
+					self::MATCH_STATE,
+					$state_id
+				),
+				ARRAY_A
+			);
+
+			if ( is_array( $state_rows ) ) {
+				$candidates = array_merge( $candidates, $state_rows );
+			}
 		}
 
-		if ( ! empty( $parts ) ) {
-			$sql .= ' WHERE ' . implode( ' AND ', $parts );
+		if ( empty( $candidates ) ) {
+			return array();
 		}
 
-		$sql .= ' ORDER BY priority ASC, id ASC';
+		$matches = array();
 
-		if ( ! empty( $values ) ) {
-			$sql = $this->wpdb->prepare( $sql, $values );
+		foreach ( $candidates as $rule ) {
+			if ( ! isset( $rule['match_type'] ) ) {
+				continue;
+			}
+
+			if ( self::MATCH_POSTCODE === $rule['match_type'] ) {
+				$rule_postcode = '';
+				if ( ! empty( $rule['postcode_id'] ) ) {
+					$rule_postcode = (string) $this->wpdb->get_var(
+						$this->wpdb->prepare(
+							"SELECT postcode FROM {$this->wpdb->prefix}admbike_locations_postcodes WHERE id = %d",
+							absint( $rule['postcode_id'] )
+						)
+					);
+				}
+
+				if ( '' === $rule_postcode || $rule_postcode !== $postcode ) {
+					continue;
+				}
+			} elseif ( self::MATCH_POSTCODE_RANGE === $rule['match_type'] ) {
+				if ( '' === $postcode || $rule['postcode_from'] > $postcode || $rule['postcode_to'] < $postcode ) {
+					continue;
+				}
+			} elseif ( self::MATCH_MUNICIPALITY === $rule['match_type'] ) {
+				if ( $municipality_id <= 0 || absint( $rule['municipality_id'] ) !== $municipality_id ) {
+					continue;
+				}
+			} elseif ( self::MATCH_STATE === $rule['match_type'] ) {
+				if ( $state_id <= 0 || absint( $rule['state_id'] ) !== $state_id ) {
+					continue;
+				}
+			} else {
+				continue;
+			}
+
+			$rule['_specificity'] = $this->get_rule_specificity( $rule['match_type'] );
+			$matches[] = $rule;
 		}
 
-		$results = $this->wpdb->get_results( $sql, ARRAY_A );
+		if ( empty( $matches ) ) {
+			return array();
+		}
 
-		return is_array( $results ) ? $results : array();
+		usort(
+			$matches,
+			function ( $left, $right ) {
+				$left_specificity  = (int) ( $left['_specificity'] ?? 0 );
+				$right_specificity = (int) ( $right['_specificity'] ?? 0 );
+
+				if ( $left_specificity !== $right_specificity ) {
+					return $left_specificity <=> $right_specificity;
+				}
+
+				$left_priority  = isset( $left['priority'] ) ? (int) $left['priority'] : 100;
+				$right_priority = isset( $right['priority'] ) ? (int) $right['priority'] : 100;
+
+				if ( $left_priority !== $right_priority ) {
+					return $left_priority <=> $right_priority;
+				}
+
+				return (int) ( $left['id'] ?? 0 ) <=> (int) ( $right['id'] ?? 0 );
+			}
+		);
+
+		foreach ( $matches as &$match ) {
+			unset( $match['_specificity'] );
+		}
+		unset( $match );
+
+		return $matches;
+	}
+
+	/**
+	 * Get rule specificity ordering.
+	 *
+	 * Lower numbers are more specific.
+	 *
+	 * @param string $match_type Match type.
+	 * @return int
+	 */
+	protected function get_rule_specificity( $match_type ) {
+		if ( self::MATCH_POSTCODE === $match_type ) {
+			return 1;
+		}
+
+		if ( self::MATCH_POSTCODE_RANGE === $match_type ) {
+			return 2;
+		}
+
+		if ( self::MATCH_MUNICIPALITY === $match_type ) {
+			return 3;
+		}
+
+		if ( self::MATCH_STATE === $match_type ) {
+			return 4;
+		}
+
+		return 99;
 	}
 }

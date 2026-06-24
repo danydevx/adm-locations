@@ -178,6 +178,75 @@ class ADMBike_Woo_Locations_REST_API {
 				),
 			)
 		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/checkout-location',
+			array(
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( $this, 'set_checkout_location' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'state_id' => array(
+							'description' => 'State ID selected in checkout.',
+							'type'        => 'integer',
+							'required'    => false,
+						),
+						'municipality_id' => array(
+							'description' => 'Municipality ID selected in checkout.',
+							'type'        => 'integer',
+							'required'    => false,
+						),
+						'postcode' => array(
+							'description' => 'Postcode selected in checkout.',
+							'type'        => 'string',
+							'required'    => false,
+						),
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Save the current checkout location in the WooCommerce session.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response
+	 */
+	public function set_checkout_location( $request ) {
+		$state_id        = isset( $request['state_id'] ) ? absint( $request['state_id'] ) : 0;
+		$municipality_id = isset( $request['municipality_id'] ) ? absint( $request['municipality_id'] ) : 0;
+		$postcode        = isset( $request['postcode'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $request['postcode'] ) : '';
+
+		$location = array(
+			'state_id'        => $state_id,
+			'municipality_id' => $municipality_id,
+			'postcode'        => $postcode,
+		);
+
+		if ( isset( WC()->session ) && WC()->session ) {
+			WC()->session->set( ADMBike_Woo_Locations_Checkout::SESSION_KEY, $location );
+		}
+
+		$response = array(
+			'success'  => true,
+			'location'  => $location,
+			'refreshed' => false,
+		);
+
+		if ( '' !== $postcode ) {
+			$coverage = $this->get_coverage( $request );
+			if ( $coverage instanceof WP_REST_Response ) {
+				$coverage_data = $coverage->get_data();
+				if ( is_array( $coverage_data ) ) {
+					$response = array_merge( $response, $coverage_data );
+				}
+			}
+		}
+
+		return new WP_REST_Response( $response, 200 );
 	}
 
 	/**
