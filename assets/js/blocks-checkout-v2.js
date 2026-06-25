@@ -363,7 +363,7 @@
 		node.textContent = message;
 	}
 
-	function scheduleCoverage(form) {
+	function scheduleCoverage(form, skipPostcode) {
 		var timer = formTimers.get(form);
 		if (timer) {
 			window.clearTimeout(timer);
@@ -371,6 +371,10 @@
 
 		timer = window.setTimeout(function () {
 			var address = getFormAddress(form);
+			if (skipPostcode) {
+				address.postcode = '';
+			}
+			console.log('[admbike] coverage skipPostcode=' + !!skipPostcode + ' address:', JSON.stringify(address));
 			if (!address.country && !address.state && !address.city && !address.postcode) {
 				updateNotice('');
 				return;
@@ -412,13 +416,39 @@
 		form.dataset.admbikeBound = '1';
 
 		stateSelect.addEventListener('change', function () {
+			var postcodeInputs = form.querySelectorAll('input[name*="postcode"]');
+			for (var pi = 0; pi < postcodeInputs.length; pi++) {
+				postcodeInputs[pi].value = '';
+				postcodeInputs[pi].dispatchEvent(new Event('input', { bubbles: true }));
+				postcodeInputs[pi].dispatchEvent(new Event('change', { bubbles: true }));
+			}
+			setTimeout(function () {
+				var postcodeInputsAfter = form.querySelectorAll('input[name*="postcode"]');
+				for (var pi2 = 0; pi2 < postcodeInputsAfter.length; pi2++) {
+					postcodeInputsAfter[pi2].value = '';
+					postcodeInputsAfter[pi2].dispatchEvent(new Event('input', { bubbles: true }));
+					postcodeInputsAfter[pi2].dispatchEvent(new Event('change', { bubbles: true }));
+				}
+				if (window.wp && window.wp.data && window.wp.data.dispatch) {
+					var checkoutDispatch = window.wp.data.dispatch('wc/store/checkout');
+					if (checkoutDispatch && typeof checkoutDispatch.setShippingAddress === 'function') {
+						checkoutDispatch.setShippingAddress({ postcode: '' });
+					}
+				}
+			}, 150);
 			populateMunicipalitySelect(form);
-			scheduleCoverage(form);
+			scheduleCoverage(form, true);
 		});
 
 		citySelect.addEventListener('change', function () {
 			syncHiddenCityInput(form, getSelectedMunicipalityName(citySelect));
-			scheduleCoverage(form);
+			scheduleCoverage(form, true);
+			if (window.wp && window.wp.data && window.wp.data.dispatch) {
+				var checkoutDispatch = window.wp.data.dispatch('wc/store/checkout');
+				if (checkoutDispatch && typeof checkoutDispatch.setShippingAddress === 'function') {
+					checkoutDispatch.setShippingAddress({ postcode: '' });
+				}
+			}
 		});
 
 		if (postcodeInput) {
@@ -432,8 +462,22 @@
 
 		if (countrySelect) {
 			countrySelect.addEventListener('change', function () {
+				var postcodeInputs = form.querySelectorAll('input[name*="postcode"]');
+				for (var pi = 0; pi < postcodeInputs.length; pi++) {
+					postcodeInputs[pi].value = '';
+					postcodeInputs[pi].dispatchEvent(new Event('input', { bubbles: true }));
+					postcodeInputs[pi].dispatchEvent(new Event('change', { bubbles: true }));
+				}
+				setTimeout(function () {
+					if (window.wp && window.wp.data && window.wp.data.dispatch) {
+						var checkoutDispatch = window.wp.data.dispatch('wc/store/checkout');
+						if (checkoutDispatch && typeof checkoutDispatch.setShippingAddress === 'function') {
+							checkoutDispatch.setShippingAddress({ postcode: '' });
+						}
+					}
+				}, 150);
 				populateMunicipalitySelect(form);
-				scheduleCoverage(form);
+				scheduleCoverage(form, true);
 			});
 		}
 
@@ -457,6 +501,56 @@
 		});
 
 		window.__admbikeBlocksObserver.observe(document.body, { childList: true, subtree: true });
+
+		var originalFetch = window.fetch;
+		window.fetch = function () {
+			var args = Array.prototype.slice.call(arguments);
+			var url = (args[0] && typeof args[0] === 'object' && args[0].url) ? args[0].url : args[0];
+			var isShippingRates = typeof url === 'string' && url.indexOf('shipping-rates') !== -1;
+			if (isShippingRates) {
+				if (typeof url === 'string') {
+					url = url.replace(/postcode=[^&]*/g, 'postcode=');
+					url = url.replace(/&postcode=$/, '');
+					if (args[0] && typeof args[0] === 'object' && !args[0].url) {
+						args[0].url = url;
+					} else if (args[0] && typeof args[0] === 'string') {
+						args[0] = url;
+					}
+				}
+				try {
+					var body = args[0] && args[0].body ? JSON.parse(args[0].body) : null;
+					if (body) {
+						if (body.cart_data && body.cart_data.shipping_address) {
+							body.cart_data.shipping_address.postcode = '';
+						}
+						if (body.shipping_address) {
+							body.shipping_address.postcode = '';
+						}
+						if (body.address) {
+							body.address.postcode = '';
+						}
+						args[0] = Object.assign({}, args[0], { body: JSON.stringify(body) });
+					}
+				} catch (e) {}
+			}
+			return originalFetch.apply(this, args);
+		};
+
+		document.addEventListener('wc_checkout_place_order', function () {
+			var shippingForm = document.getElementById('shipping');
+			if (shippingForm) {
+				var postcodeInputs = shippingForm.querySelectorAll('input[name*="postcode"]');
+				for (var pi = 0; pi < postcodeInputs.length; pi++) {
+					postcodeInputs[pi].value = '';
+				}
+				if (window.wp && window.wp.data && window.wp.data.dispatch) {
+					var d = window.wp.data.dispatch('wc/store/checkout');
+					if (d && d.setShippingAddress) {
+						d.setShippingAddress({ postcode: '' });
+					}
+				}
+			}
+		}, true);
 	}
 
 	if (document.readyState === 'loading') {
