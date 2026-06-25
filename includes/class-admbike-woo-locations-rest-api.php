@@ -172,7 +172,17 @@ class ADMBike_Woo_Locations_REST_API {
 						'postcode' => array(
 							'description' => 'Postcode to check coverage for.',
 							'type'        => 'string',
-							'required'    => true,
+							'required'    => false,
+						),
+						'state' => array(
+							'description' => 'State code or name to check coverage for.',
+							'type'        => 'string',
+							'required'    => false,
+						),
+						'country' => array(
+							'description' => 'Country code to check coverage for.',
+							'type'        => 'string',
+							'required'    => false,
 						),
 					),
 				),
@@ -203,6 +213,16 @@ class ADMBike_Woo_Locations_REST_API {
 							'type'        => 'string',
 							'required'    => false,
 						),
+						'state' => array(
+							'description' => 'State code or name selected in checkout.',
+							'type'        => 'string',
+							'required'    => false,
+						),
+						'country' => array(
+							'description' => 'Country code selected in checkout.',
+							'type'        => 'string',
+							'required'    => false,
+						),
 					),
 				),
 			)
@@ -217,17 +237,42 @@ class ADMBike_Woo_Locations_REST_API {
 	 */
 	public function set_checkout_location( $request ) {
 		$state_id        = isset( $request['state_id'] ) ? absint( $request['state_id'] ) : 0;
+		$state_value     = isset( $request['state'] ) ? sanitize_text_field( (string) $request['state'] ) : '';
+		$country         = isset( $request['country'] ) ? strtoupper( sanitize_text_field( (string) $request['country'] ) ) : 'MX';
 		$municipality_id = isset( $request['municipality_id'] ) ? absint( $request['municipality_id'] ) : 0;
 		$postcode        = isset( $request['postcode'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $request['postcode'] ) : '';
+		$city            = isset( $request['city'] ) ? sanitize_text_field( (string) $request['city'] ) : '';
+
+		if ( $state_id <= 0 && '' !== $state_value ) {
+			$state = $this->states_repo()->get_by_code_or_name( $state_value );
+			if ( $state && ! empty( $state['id'] ) ) {
+				$state_id = absint( $state['id'] );
+			}
+		}
+
+		if ( '' !== $country && 'MX' !== $country ) {
+			return new WP_REST_Response(
+				array(
+					'available'       => false,
+					'rule_type'       => 'unavailable',
+					'message'         => admbike_woo_locations()->get_no_coverage_message(),
+					'postcode'        => $postcode,
+					'state_id'        => $state_id,
+					'municipality_id' => $municipality_id,
+				),
+				200
+			);
+		}
 
 		$location = array(
 			'state_id'        => $state_id,
 			'municipality_id' => $municipality_id,
 			'postcode'        => $postcode,
+			'city'            => $city,
 		);
 
 		if ( isset( WC()->session ) && WC()->session ) {
-			WC()->session->set( ADMBike_Woo_Locations_Checkout::SESSION_KEY, $location );
+			WC()->session->set( ADMBike_Woo_Locations_Store_API::SESSION_KEY, $location );
 		}
 
 		$response = array(
@@ -359,45 +404,152 @@ class ADMBike_Woo_Locations_REST_API {
 	 * @return WP_REST_Response
 	 */
 	public function get_coverage( $request ) {
-		$postcode = isset( $request['postcode'] )
-			? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $request['postcode'] )
-			: '';
+		$state_id        = isset( $request['state_id'] ) ? absint( $request['state_id'] ) : 0;
+		$state_value     = isset( $request['state'] ) ? sanitize_text_field( (string) $request['state'] ) : '';
+		$country         = isset( $request['country'] ) ? strtoupper( sanitize_text_field( (string) $request['country'] ) ) : 'MX';
+		$municipality_id = isset( $request['municipality_id'] ) ? absint( $request['municipality_id'] ) : 0;
+		$postcode        = isset( $request['postcode'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $request['postcode'] ) : '';
+		$city            = isset( $request['city'] ) ? sanitize_text_field( (string) $request['city'] ) : '';
+		$municipality    = null;
 
-		if ( empty( $postcode ) ) {
-			return new WP_REST_Response(
-				array(
-					'error'   => 'postcode_required',
-					'message' => __( 'Postcode is required.', 'admbike-woo-locations' ),
-				),
-				400
-			);
+		if ( $state_id <= 0 && '' !== $state_value ) {
+			$state = $this->states_repo()->get_by_code_or_name( $state_value );
+			if ( $state && ! empty( $state['id'] ) ) {
+				$state_id = absint( $state['id'] );
+			}
 		}
 
-		$postcode_rows = $this->postcodes_repo()->get_by_postcode( $postcode );
+		if ( '' !== $country && 'MX' !== $country ) {
+			$location = array(
+				'available'       => false,
+				'rule_type'       => 'unavailable',
+				'message'         => admbike_woo_locations()->get_no_coverage_message(),
+				'postcode'        => $postcode,
+				'state_id'        => $state_id,
+				'municipality_id' => $municipality_id,
+			);
 
-		if ( empty( $postcode_rows ) ) {
-			return new WP_REST_Response(
-				array(
+			return new WP_REST_Response( $location, 200 );
+		}
+
+		if ( $municipality_id > 0 ) {
+			$municipality = $this->municipalities_repo()->get_by_id( $municipality_id );
+			if ( ! $municipality || empty( $municipality['id'] ) ) {
+				return new WP_REST_Response(
+					array(
+						'available'       => false,
+						'rule_type'       => 'unavailable',
+						'message'         => admbike_woo_locations()->get_no_coverage_message(),
+						'postcode'        => $postcode,
+						'state_id'        => $state_id,
+						'municipality_id' => $municipality_id,
+					),
+					200
+				);
+			}
+
+			$municipality_state_id = ! empty( $municipality['state_id'] ) ? (int) $municipality['state_id'] : 0;
+			if ( $state_id > 0 && $municipality_state_id > 0 && $state_id !== $municipality_state_id ) {
+				return new WP_REST_Response(
+					array(
+						'available'       => false,
+						'rule_type'       => 'unavailable',
+						'message'         => admbike_woo_locations()->get_no_coverage_message(),
+						'postcode'        => $postcode,
+						'state_id'        => $state_id,
+						'municipality_id' => $municipality_id,
+					),
+					200
+				);
+			}
+
+			if ( $state_id <= 0 && $municipality_state_id > 0 ) {
+				$state_id = $municipality_state_id;
+			}
+		}
+
+		if ( '' !== $postcode ) {
+			$postcode_rows = $this->postcodes_repo()->get_by_postcode( $postcode );
+			if ( ! empty( $postcode_rows ) ) {
+				$first_match = $postcode_rows[0];
+				$state_id        = ! empty( $first_match['state_id'] ) ? (int) $first_match['state_id'] : $state_id;
+				$municipality_id = ! empty( $first_match['municipality_id'] ) ? (int) $first_match['municipality_id'] : $municipality_id;
+			} elseif ( 0 === $state_id && 0 === $municipality_id ) {
+				return new WP_REST_Response(
+					array(
 					'available' => false,
 					'rule_type' => 'unavailable',
-					'message'   => __( 'No coverage for this postcode.', 'admbike-woo-locations' ),
+					'message'   => admbike_woo_locations()->get_no_coverage_message(),
 				),
 				200
 			);
+			}
 		}
 
-		$first_match = $postcode_rows[0];
-		$state_id        = (int) $first_match['state_id'];
-		$municipality_id = (int) $first_match['municipality_id'];
+		if ( 0 === $municipality_id && '' !== $city ) {
+			if ( $state_id > 0 ) {
+				$municipality = $this->municipalities_repo()->get_by_state_and_name( $state_id, $city );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = (int) $municipality['id'];
+				} else {
+					return new WP_REST_Response(
+						array(
+							'available'       => false,
+							'rule_type'       => 'unavailable',
+							'message'         => admbike_woo_locations()->get_no_coverage_message(),
+							'postcode'        => $postcode,
+							'state_id'        => $state_id,
+							'municipality_id' => 0,
+						),
+						200
+					);
+				}
+			}
+
+			if ( 0 === $municipality_id ) {
+				$municipality = $this->municipalities_repo()->get_by_name( $city );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = (int) $municipality['id'];
+					if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
+						$state_id = (int) $municipality['state_id'];
+					}
+				} else {
+					return new WP_REST_Response(
+						array(
+							'available'       => false,
+							'rule_type'       => 'unavailable',
+							'message'         => admbike_woo_locations()->get_no_coverage_message(),
+							'postcode'        => $postcode,
+							'state_id'        => $state_id,
+							'municipality_id' => 0,
+						),
+						200
+					);
+				}
+			}
+		}
 
 		$rules = $this->shipping_rules_repo()->get_applicable_rules( $state_id, $municipality_id, $postcode );
 
 		if ( empty( $rules ) ) {
+			if ( '' === $postcode ) {
+				return new WP_REST_Response(
+					array(
+						'available' => null,
+						'rule_type' => 'pending',
+						'message'   => '',
+						'postcode'  => $postcode,
+						'state_id'  => $state_id,
+					),
+					200
+				);
+			}
+
 			return new WP_REST_Response(
 				array(
 					'available'         => false,
 					'rule_type'         => 'unavailable',
-					'message'           => __( 'No shipping rule found for this location.', 'admbike-woo-locations' ),
+					'message'           => admbike_woo_locations()->get_no_coverage_message(),
 					'postcode'          => $postcode,
 					'state_id'          => $state_id,
 					'municipality_id'   => $municipality_id,
@@ -413,7 +565,7 @@ class ADMBike_Woo_Locations_REST_API {
 				array(
 					'available'    => false,
 					'rule_type'    => 'unavailable',
-					'message'      => __( 'Sorry, we do not deliver to this location.', 'admbike-woo-locations' ),
+					'message'      => admbike_woo_locations()->get_no_coverage_message(),
 					'postcode'     => $postcode,
 					'state_id'     => $state_id,
 					'municipality_id' => $municipality_id,

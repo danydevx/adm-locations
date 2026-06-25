@@ -25,75 +25,61 @@ class ADMBike_Woo_Locations_Checkout {
 		add_action( 'woocommerce_checkout_fields', array( $this, 'override_checkout_fields' ), 5 );
 		add_action( 'woocommerce_after_checkout_form', array( $this, 'output_checkout_selectors' ) );
 		add_action( 'woocommerce_after_checkout_validation', array( $this, 'validate_checkout_coverage' ), 10, 2 );
+		add_action( 'woocommerce_store_api_cart_errors', array( $this, 'validate_store_api_shipping_coverage' ), 10, 2 );
 		add_action( 'woocommerce_checkout_posted_data', array( $this, 'save_checkout_posted_data' ) );
 		add_action( 'woocommerce_checkout_order_processed', array( $this, 'save_order_location_meta' ), 10, 3 );
-		add_action( 'woocommerce_store_api_cart_update_customer_from_request', array( $this, 'log_store_api_customer_request' ), 5, 2 );
-		add_action( 'woocommerce_store_api_checkout_update_customer_from_request', array( $this, 'log_store_api_customer_request' ), 5, 2 );
-		add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'log_store_api_order_request' ), 5, 2 );
+		add_action( 'woocommerce_store_api_cart_update_customer_from_request', array( $this, 'save_store_api_shipping_location_from_request' ), 5, 2 );
+		add_action( 'woocommerce_store_api_checkout_update_customer_from_request', array( $this, 'save_store_api_shipping_location_from_request' ), 5, 2 );
+		add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'save_store_api_order_location_meta' ), 10, 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
 		add_action( 'wp_footer', array( $this, 'output_inline_config' ), 5 );
 	}
 
 	/**
-	 * Log Store API customer update requests for debugging.
+	 * Save the shipping address from Store API requests into session.
 	 *
 	 * @param WC_Customer      $customer Customer object.
 	 * @param WP_REST_Request  $request Request object.
 	 * @return void
 	 */
-	public function log_store_api_customer_request( $customer, $request ) {
-		if ( ! class_exists( 'ADMBike_Woo_Locations_Logger' ) || ! $request instanceof WP_REST_Request ) {
+	public function save_store_api_shipping_location_from_request( $customer, $request ) {
+		if ( ! $request instanceof WP_REST_Request ) {
 			return;
 		}
 
-		ADMBike_Woo_Locations_Logger::warning(
-			'Store API customer request received',
-			array(
-				'billing_address'  => $this->sanitize_store_api_address_for_log( $request['billing_address'] ?? array() ),
-				'shipping_address' => $this->sanitize_store_api_address_for_log( $request['shipping_address'] ?? array() ),
-			)
-		);
+		$shipping_address = isset( $request['shipping_address'] ) && is_array( $request['shipping_address'] ) ? $request['shipping_address'] : array();
+		$location         = $this->resolve_location_from_shipping_address( $shipping_address );
+
+		if ( empty( $location['state_id'] ) && empty( $location['municipality_id'] ) && empty( $location['postcode'] ) ) {
+			return;
+		}
+
+		if ( isset( WC()->session ) && WC()->session ) {
+			WC()->session->set( self::SESSION_KEY, $location );
+		}
+
+		if ( class_exists( 'ADMBike_Woo_Locations_Logger' ) ) {
+			ADMBike_Woo_Locations_Logger::warning(
+				'Store API shipping location saved',
+				array(
+					'location' => $location,
+				)
+			);
+		}
 	}
 
 	/**
-	 * Log Store API order update requests for debugging.
+	 * Save order meta for Store API orders.
 	 *
-	 * @param WC_Order        $order Order object.
-	 * @param WP_REST_Request  $request Request object.
+	 * @param WC_Order $order Order object.
 	 * @return void
 	 */
-	public function log_store_api_order_request( $order, $request ) {
-		if ( ! class_exists( 'ADMBike_Woo_Locations_Logger' ) || ! $request instanceof WP_REST_Request ) {
+	public function save_store_api_order_location_meta( $order ) {
+		if ( ! is_a( $order, 'WC_Order' ) ) {
 			return;
 		}
 
-		ADMBike_Woo_Locations_Logger::warning(
-			'Store API order request received',
-			array(
-				'payment_method'   => sanitize_text_field( (string) ( $request['payment_method'] ?? '' ) ),
-				'billing_address'  => $this->sanitize_store_api_address_for_log( $request['billing_address'] ?? array() ),
-				'shipping_address' => $this->sanitize_store_api_address_for_log( $request['shipping_address'] ?? array() ),
-			)
-		);
-	}
-
-	/**
-	 * Sanitize a Store API address for logging.
-	 *
-	 * @param array<string, mixed> $address Address data.
-	 * @return array<string, string>
-	 */
-	protected function sanitize_store_api_address_for_log( $address ) {
-		$address = is_array( $address ) ? $address : array();
-
-		return array(
-			'first_name' => isset( $address['first_name'] ) ? sanitize_text_field( (string) $address['first_name'] ) : '',
-			'last_name'  => isset( $address['last_name'] ) ? sanitize_text_field( (string) $address['last_name'] ) : '',
-			'city'       => isset( $address['city'] ) ? sanitize_text_field( (string) $address['city'] ) : '',
-			'state'      => isset( $address['state'] ) ? sanitize_text_field( (string) $address['state'] ) : '',
-			'postcode'   => isset( $address['postcode'] ) ? sanitize_text_field( (string) $address['postcode'] ) : '',
-			'country'    => isset( $address['country'] ) ? sanitize_text_field( (string) $address['country'] ) : '',
-		);
+		$this->persist_order_location_meta( $order );
 	}
 
 	/**
@@ -176,6 +162,7 @@ class ADMBike_Woo_Locations_Checkout {
 		return $fields;
 	}
 
+
 	/**
 	 * Output the checkout selector HTML and JS initialization.
 	 *
@@ -208,6 +195,7 @@ class ADMBike_Woo_Locations_Checkout {
 				'municipality_id' => ! empty( $_POST['admbike_municipality_id'] ) ? absint( $_POST['admbike_municipality_id'] ) : 0,
 				'postcode'        => isset( $_POST['admbike_postcode_select'] ) ? sanitize_text_field( (string) $_POST['admbike_postcode_select'] ) : '',
 				'postcode_raw'    => isset( $_POST['admbike_postcode_select'] ) ? sanitize_text_field( (string) $_POST['admbike_postcode_select'] ) : '',
+				'city'            => isset( $_POST['billing_city'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['billing_city'] ) ) : ( isset( $_POST['shipping_city'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['shipping_city'] ) ) : '' ),
 			) );
 		}
 
@@ -222,22 +210,53 @@ class ADMBike_Woo_Locations_Checkout {
 	 * @return void
 	 */
 	public function validate_checkout_coverage( $data, $errors ) {
+		if ( $this->is_pickup_selected( $data ) ) {
+			return;
+		}
+
 		$location = $this->get_checkout_location( $data );
 
-		if ( empty( $location['postcode'] ) ) {
+		if ( empty( $location['postcode'] ) && empty( $location['municipality_id'] ) && empty( $location['city'] ) ) {
 			return;
 		}
 
 		$coverage = $this->get_coverage_for_location( $location );
 
 		if ( empty( $coverage ) || ADMBike_Woo_Locations_Shipping_Rule_Repository::RULE_UNAVAILABLE === ( $coverage[0]['rule_type'] ?? '' ) ) {
-			$message = __( 'No contamos con cobertura para esta ubicación.', 'admbike-woo-locations' );
+			$message = $this->get_no_coverage_message();
 
 			if ( is_object( $errors ) && method_exists( $errors, 'add' ) ) {
 				$errors->add( 'admbike_no_coverage', $message );
 			}
 
 			wc_add_notice( $message, 'error' );
+		}
+	}
+
+	/**
+	 * Validate shipping coverage for Store API checkout/cart requests.
+	 *
+	 * @param WP_Error $errors Validation errors.
+	 * @param WC_Cart   $cart Cart object.
+	 * @return void
+	 */
+	public function validate_store_api_shipping_coverage( $errors, $cart ) {
+		if ( $this->is_pickup_selected() ) {
+			return;
+		}
+
+		$location = $this->get_checkout_location( array() );
+		if ( empty( $location['postcode'] ) && empty( $location['state_id'] ) && empty( $location['municipality_id'] ) && empty( $location['city'] ) ) {
+			return;
+		}
+
+		$coverage = $this->get_coverage_for_location( $location );
+		if ( ! empty( $coverage ) && ADMBike_Woo_Locations_Shipping_Rule_Repository::RULE_UNAVAILABLE !== ( $coverage[0]['rule_type'] ?? '' ) ) {
+			return;
+		}
+
+		if ( is_object( $errors ) && method_exists( $errors, 'add' ) ) {
+			$errors->add( 'admbike_no_coverage', $this->get_no_coverage_message() );
 		}
 	}
 
@@ -269,18 +288,44 @@ class ADMBike_Woo_Locations_Checkout {
 			return;
 		}
 
+		$this->persist_order_location_meta( $order, $location );
+	}
+
+	/**
+	 * Persist order meta from a resolved checkout location.
+	 *
+	 * @param WC_Order               $order Order object.
+	 * @param array<string, mixed>    $location Resolved location.
+	 * @return void
+	 */
+	protected function persist_order_location_meta( $order, array $location = array() ) {
+		if ( ! is_a( $order, 'WC_Order' ) ) {
+			return;
+		}
+
+		if ( empty( $location ) ) {
+			$location = array();
+			if ( isset( WC()->session ) && WC()->session ) {
+				$location = (array) WC()->session->get( self::SESSION_KEY, array() );
+			}
+		}
+
+		if ( empty( $location ) ) {
+			return;
+		}
+
 		$states_repo = new ADMBike_Woo_Locations_State_Repository();
 		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
 		$pc_repo     = new ADMBike_Woo_Locations_Postcode_Repository();
 
-		$state   = $states_repo->get_by_id( $location['state_id'] );
-		$muni    = $muni_repo->get_by_id( $location['municipality_id'] );
-		$postcode = $location['postcode'];
+		$state    = ! empty( $location['state_id'] ) ? $states_repo->get_by_id( $location['state_id'] ) : null;
+		$muni     = ! empty( $location['municipality_id'] ) ? $muni_repo->get_by_id( $location['municipality_id'] ) : null;
+		$postcode = isset( $location['postcode'] ) ? sanitize_text_field( (string) $location['postcode'] ) : '';
 
-		$order->update_meta_data( '_admbike_state_id', $location['state_id'] );
+		$order->update_meta_data( '_admbike_state_id', isset( $location['state_id'] ) ? absint( $location['state_id'] ) : 0 );
 		$order->update_meta_data( '_admbike_state_name', $state ? $state['name'] : '' );
 		$order->update_meta_data( '_admbike_state_code', $state ? $state['code'] : '' );
-		$order->update_meta_data( '_admbike_municipality_id', $location['municipality_id'] );
+		$order->update_meta_data( '_admbike_municipality_id', isset( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0 );
 		$order->update_meta_data( '_admbike_municipality_name', $muni ? $muni['name'] : '' );
 		$order->update_meta_data( '_admbike_postcode', $postcode );
 
@@ -292,6 +337,67 @@ class ADMBike_Woo_Locations_Checkout {
 		}
 
 		$order->save();
+	}
+
+	/**
+	 * Resolve checkout location from a Store API shipping address.
+	 *
+	 * @param array<string, mixed> $shipping_address Shipping address.
+	 * @return array<string, int|string>
+	 */
+	protected function resolve_location_from_shipping_address( array $shipping_address ) {
+		$states_repo = new ADMBike_Woo_Locations_State_Repository();
+		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
+		$pc_repo     = new ADMBike_Woo_Locations_Postcode_Repository();
+
+		$state_value = isset( $shipping_address['state'] ) ? sanitize_text_field( (string) $shipping_address['state'] ) : '';
+		$city_value   = isset( $shipping_address['city'] ) ? sanitize_text_field( (string) $shipping_address['city'] ) : '';
+		$postcode     = isset( $shipping_address['postcode'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $shipping_address['postcode'] ) : '';
+
+		$state_id = 0;
+		if ( '' !== $state_value ) {
+			$state = $states_repo->get_by_code_or_name( $state_value );
+			if ( $state && ! empty( $state['id'] ) ) {
+				$state_id = absint( $state['id'] );
+			}
+		}
+
+		$municipality_id = 0;
+		if ( '' !== $postcode ) {
+			$pc_rows = $pc_repo->get_by_postcode( $postcode );
+			if ( ! empty( $pc_rows ) ) {
+				$municipality_id = ! empty( $pc_rows[0]['municipality_id'] ) ? absint( $pc_rows[0]['municipality_id'] ) : 0;
+				$state_id        = ! empty( $pc_rows[0]['state_id'] ) ? absint( $pc_rows[0]['state_id'] ) : $state_id;
+			}
+		}
+
+		if ( $municipality_id <= 0 && '' !== $city_value ) {
+			if ( $state_id > 0 ) {
+				$municipality = $muni_repo->get_by_state_and_name( $state_id, $city_value );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+				}
+			}
+
+			if ( $municipality_id <= 0 ) {
+				$municipality = $muni_repo->get_by_name( $city_value );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+					if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
+						$state_id = absint( $municipality['state_id'] );
+					}
+				}
+			}
+		}
+
+		return array(
+			'country'         => isset( $shipping_address['country'] ) ? sanitize_text_field( (string) $shipping_address['country'] ) : 'MX',
+			'state_id'        => $state_id,
+			'municipality_id' => $municipality_id,
+			'postcode'        => $postcode,
+			'state_code'      => '' !== $state_value ? strtoupper( $state_value ) : '',
+			'city'            => $city_value,
+		);
 	}
 
 	/**
@@ -333,10 +439,24 @@ class ADMBike_Woo_Locations_Checkout {
 			$postcode = sanitize_text_field( (string) $session_location['postcode'] );
 		}
 
+		$city = '';
+		if ( ! empty( $data['billing_city'] ) ) {
+			$city = sanitize_text_field( (string) $data['billing_city'] );
+		} elseif ( ! empty( $data['shipping_city'] ) ) {
+			$city = sanitize_text_field( (string) $data['shipping_city'] );
+		} elseif ( ! empty( $_POST['billing_city'] ) ) {
+			$city = sanitize_text_field( wp_unslash( (string) $_POST['billing_city'] ) );
+		} elseif ( ! empty( $_POST['shipping_city'] ) ) {
+			$city = sanitize_text_field( wp_unslash( (string) $_POST['shipping_city'] ) );
+		} elseif ( ! empty( $session_location['city'] ) ) {
+			$city = sanitize_text_field( (string) $session_location['city'] );
+		}
+
 		return array(
 			'state_id'        => $state_id,
 			'municipality_id' => $municipality_id,
 			'postcode'        => $postcode,
+			'city'            => $city,
 		);
 	}
 
@@ -350,9 +470,76 @@ class ADMBike_Woo_Locations_Checkout {
 		$state_id        = isset( $location['state_id'] ) ? absint( $location['state_id'] ) : 0;
 		$municipality_id = isset( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0;
 		$postcode        = isset( $location['postcode'] ) ? (string) $location['postcode'] : '';
+		$city            = isset( $location['city'] ) ? sanitize_text_field( (string) $location['city'] ) : '';
+
+		if ( $municipality_id <= 0 && '' !== $city ) {
+			$muni_repo = new ADMBike_Woo_Locations_Municipality_Repository();
+			if ( $state_id > 0 ) {
+				$municipality = $muni_repo->get_by_state_and_name( $state_id, $city );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+				}
+			}
+
+			if ( $municipality_id <= 0 ) {
+				$municipality = $muni_repo->get_by_name( $city );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+					if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
+						$state_id = absint( $municipality['state_id'] );
+					}
+				}
+			}
+		}
 
 		$state_repo = new ADMBike_Woo_Locations_Shipping_Rule_Repository();
 		return $state_repo->get_applicable_rules( $state_id, $municipality_id, $postcode );
+	}
+
+	/**
+	 * Detect whether pickup is selected.
+	 *
+	 * @param array<string, mixed> $data Posted checkout data.
+	 * @return bool
+	 */
+	protected function is_pickup_selected( array $data = array() ) {
+		if ( ! empty( $data['admbike_pickup_toggle'] ) ) {
+			return true;
+		}
+
+		if ( ! empty( $_POST['admbike_pickup_toggle'] ) ) {
+			return true;
+		}
+
+		$chosen_methods = array();
+		if ( isset( WC()->session ) && WC()->session ) {
+			$chosen_methods = (array) WC()->session->get( 'chosen_shipping_methods', array() );
+		}
+
+		foreach ( $chosen_methods as $method_id ) {
+			if ( is_string( $method_id ) && false !== strpos( $method_id, 'local_pickup' ) ) {
+				return true;
+			}
+		}
+
+		if ( ! empty( $_POST['shipping_method'] ) && is_array( $_POST['shipping_method'] ) ) {
+			foreach ( $_POST['shipping_method'] as $method_id ) {
+				if ( is_string( $method_id ) && false !== strpos( $method_id, 'local_pickup' ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the global no coverage message.
+	 *
+	 * @return string
+	 */
+	protected function get_no_coverage_message() {
+		return admbike_woo_locations()->get_no_coverage_message();
 	}
 
 	/**
@@ -390,7 +577,7 @@ class ADMBike_Woo_Locations_Checkout {
 					'selectState'       => __( 'Selecciona un estado…', 'admbike-woo-locations' ),
 					'selectMunicipality'=> __( 'Selecciona un municipio…', 'admbike-woo-locations' ),
 					'selectPostcode'    => __( 'Selecciona un código postal…', 'admbike-woo-locations' ),
-					'noCoverage'        => __( 'No contamos con cobertura para esta ubicación.', 'admbike-woo-locations' ),
+					'noCoverage'        => admbike_woo_locations()->get_no_coverage_message(),
 					'loading'           => __( 'Cargando…', 'admbike-woo-locations' ),
 				),
 			)

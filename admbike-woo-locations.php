@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'ADMBIKE_WOO_LOCATIONS_VERSION', '0.1.0' );
-define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.0.0' );
+define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.1.0' );
 define( 'ADMBIKE_WOO_LOCATIONS_FILE', __FILE__ );
 define( 'ADMBIKE_WOO_LOCATIONS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ADMBIKE_WOO_LOCATIONS_URL', plugin_dir_url( __FILE__ ) );
@@ -31,8 +31,8 @@ require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-postcode-repository.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-rule-repository.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-rest-api.php';
-require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-checkout.php';
-require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-blocks.php';
+require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-store-api.php';
+require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-blocks-checkout.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-method.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-info.php';
@@ -61,27 +61,11 @@ if ( is_admin() ) {
 
 new ADMBike_Woo_Locations_REST_API();
 new ADMBike_Woo_Locations_Shipping();
+new ADMBike_Woo_Locations_Store_API();
 
 if ( ! is_admin() ) {
-	new ADMBike_Woo_Locations_Checkout();
+	new ADMBike_Woo_Locations_Blocks_Checkout();
 	new ADMBike_Woo_Locations_Shipping_Info();
-
-	add_action(
-		'wp_loaded',
-		function () {
-			if ( ! class_exists( 'ADMBike_Woo_Locations_Blocks' ) ) {
-				return;
-			}
-
-			try {
-				if ( ADMBike_Woo_Locations_Blocks::is_blocks_checkout() ) {
-					new ADMBike_Woo_Locations_Blocks();
-				}
-			} catch ( Throwable $e ) {
-				error_log( 'ADMBike Woo Locations Blocks init error: ' . $e->getMessage() );
-			}
-		}
-	);
 }
 
 /**

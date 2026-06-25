@@ -116,12 +116,28 @@ $per_page = 20;
 $total  = $states_repo->count_all( $search );
 $items  = $states_repo->get_paginated( 'name ASC', $per_page, $paged, $search );
 $total_pages = max( 1, ceil( $total / $per_page ) );
+$woocommerce_mx_states = ADMBike_Woo_Locations_Admin::get_woocommerce_mx_states();
 
 ?>
 <div class="wrap">
 	<h1 class="wp-heading-inline"><?php esc_html_e( 'States', 'admbike-woo-locations' ); ?></h1>
 	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=add' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New', 'admbike-woo-locations' ); ?></a>
 	<hr class="wp-header-end">
+
+	<div class="notice notice-info inline admbike-help-card">
+		<h2><?php esc_html_e( 'WooCommerce MX State Codes', 'admbike-woo-locations' ); ?></h2>
+		<p>
+			<?php esc_html_e( 'Use the exact WooCommerce state code in the State Code field. This is required so Checkout Blocks can map states to your municipalities correctly.', 'admbike-woo-locations' ); ?>
+		</p>
+		<div class="admbike-help-grid">
+			<?php foreach ( $woocommerce_mx_states as $code => $label ) : ?>
+				<div class="admbike-help-grid__item">
+					<code><?php echo esc_html( $code ); ?></code>
+					<span><?php echo esc_html( $label ); ?></span>
+				</div>
+			<?php endforeach; ?>
+		</div>
+	</div>
 
 	<form method="get" action="">
 		<input type="hidden" name="page" value="<?php echo esc_attr( ADMBike_Woo_Locations_Admin::STATES_SLUG ); ?>">

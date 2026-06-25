@@ -83,6 +83,32 @@ class ADMBike_Woo_Locations_State_Repository extends ADMBike_Woo_Locations_Abstr
 	}
 
 	/**
+	 * Get a state by code or normalized name.
+	 *
+	 * @param string $value State code or name.
+	 * @return array<string, mixed>|null
+	 */
+	public function get_by_code_or_name( $value ) {
+		$term = sanitize_title( sanitize_text_field( (string) $value ) );
+
+		if ( '' === $term ) {
+			return null;
+		}
+
+		$states = $this->get_active_states();
+		foreach ( $states as $state ) {
+			$code = isset( $state['code'] ) ? strtoupper( sanitize_text_field( (string) $state['code'] ) ) : '';
+			$name = isset( $state['name'] ) ? sanitize_title( sanitize_text_field( (string) $state['name'] ) ) : '';
+
+			if ( $code === strtoupper( sanitize_text_field( (string) $value ) ) || $name === $term ) {
+				return $state;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Get paginated states.
 	 *
 	 * @param string $order_by Order by clause.

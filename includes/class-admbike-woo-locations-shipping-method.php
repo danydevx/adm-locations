@@ -243,11 +243,15 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 			$cost = (float) ( $applied_rule['shipping_cost'] ?? 0 );
 		}
 
+		$label = ! empty( $applied_rule['display_title'] ) ? sanitize_text_field( (string) $applied_rule['display_title'] ) : $this->title;
+		$customer_message = ! empty( $applied_rule['customer_message'] ) ? sanitize_textarea_field( (string) $applied_rule['customer_message'] ) : '';
+
 		ADMBike_Woo_Locations_Logger::log_shipping_calculation( $postcode, $rules, $applied_rule, $cost );
 
 		$rate = array(
 			'id'    => $this->get_rate_id(),
-			'label' => $this->title,
+			'label' => $label,
+			'description' => $customer_message,
 			'cost'  => $cost,
 			'meta_data' => array(
 				'_admbike_rule_id'     => (int) $applied_rule['id'],
@@ -258,6 +262,8 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 				'_admbike_postcode'   => $postcode,
 				'_admbike_state_id'   => $state_id,
 				'_admbike_municipality_id' => $municipality_id,
+				'_admbike_display_title' => $label,
+				'_admbike_customer_message' => $customer_message,
 			),
 		);
 

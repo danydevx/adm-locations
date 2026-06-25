@@ -25,6 +25,8 @@ $selected_postcode_to     = $is_edit ? ( $item['postcode_to'] ?? '' ) : ( isset(
 $selected_cost            = $is_edit ? ( $item['shipping_cost'] ?? 0 ) : ( isset( $_POST['shipping_cost'] ) ? (float) $_POST['shipping_cost'] : 0 );
 $selected_currency       = $is_edit ? ( $item['currency_code'] ?? 'MXN' ) : ( isset( $_POST['currency_code'] ) ? sanitize_text_field( (string) $_POST['currency_code'] ) : 'MXN' );
 $selected_priority       = $is_edit ? ( $item['priority'] ?? 100 ) : ( isset( $_POST['priority'] ) ? absint( $_POST['priority'] ) : 100 );
+$selected_display_title   = $is_edit ? ( $item['display_title'] ?? '' ) : ( isset( $_POST['display_title'] ) ? sanitize_text_field( (string) $_POST['display_title'] ) : '' );
+$selected_customer_message = $is_edit ? ( $item['customer_message'] ?? '' ) : ( isset( $_POST['customer_message'] ) ? sanitize_textarea_field( (string) $_POST['customer_message'] ) : '' );
 $selected_notes          = $is_edit ? ( $item['notes'] ?? '' ) : ( isset( $_POST['notes'] ) ? sanitize_textarea_field( (string) $_POST['notes'] ) : '' );
 $selected_active         = $is_edit ? (int) ( $item['is_active'] ?? 1 ) : ( isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 1 );
 ?>
@@ -152,6 +154,29 @@ $selected_active         = $is_edit ? (int) ( $item['is_active'] ?? 1 ) : ( isse
 					<option value="paid" <?php selected( 'paid', $rule_type ); ?>><?php esc_html_e( 'Paid Shipping', 'admbike-woo-locations' ); ?></option>
 					<option value="unavailable" <?php selected( 'unavailable', $rule_type ); ?>><?php esc_html_e( 'Unavailable / Blocked', 'admbike-woo-locations' ); ?></option>
 				</select>
+			</td>
+		</tr>
+
+		<tr>
+			<th scope="row">
+				<label for="display_title"><?php esc_html_e( 'Checkbox Title', 'admbike-woo-locations' ); ?></label>
+			</th>
+			<td>
+				<input type="text" id="display_title" name="display_title" class="regular-text"
+					value="<?php echo esc_attr( $selected_display_title ); ?>"
+					placeholder="<?php esc_attr_e( 'e.g. Delivery to Guadalajara', 'admbike-woo-locations' ); ?>">
+				<p class="description"><?php esc_html_e( 'Text shown as the shipping option title in checkout.', 'admbike-woo-locations' ); ?></p>
+			</td>
+		</tr>
+
+		<tr>
+			<th scope="row">
+				<label for="customer_message"><?php esc_html_e( 'Shipping Explanation', 'admbike-woo-locations' ); ?></label>
+			</th>
+			<td>
+				<textarea id="customer_message" name="customer_message" rows="3" class="large-text"
+					placeholder="<?php esc_attr_e( 'Explain why this shipping cost applies...', 'admbike-woo-locations' ); ?>"><?php echo esc_textarea( $selected_customer_message ); ?></textarea>
+				<p class="description"><?php esc_html_e( 'Shown under the shipping option to explain the price.', 'admbike-woo-locations' ); ?></p>
 			</td>
 		</tr>
 

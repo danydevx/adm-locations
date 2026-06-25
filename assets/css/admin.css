@@ -43,3 +43,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 .admbike-admin-wrap .notice {
 	margin: 10px 0;
 }
+
+.admbike-help-card {
+	padding: 12px 16px;
+}
+
+.admbike-help-card h2 {
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+
+.admbike-help-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 8px 16px;
+	margin-top: 12px;
+}
+
+.admbike-help-grid__item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.admbike-help-grid__item code {
+	min-width: 38px;
+	padding: 2px 6px;
+	font-size: 12px;
+	text-align: center;
+}

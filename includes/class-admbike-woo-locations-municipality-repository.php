@@ -78,6 +78,69 @@ class ADMBike_Woo_Locations_Municipality_Repository extends ADMBike_Woo_Location
 	}
 
 	/**
+	 * Get a municipality by state and normalized name.
+	 *
+	 * @param int    $state_id State ID.
+	 * @param string $name Municipality name.
+	 * @param bool   $active_only Filter active rows.
+	 * @return array<string, mixed>|null
+	 */
+	public function get_by_state_and_name( $state_id, $name, $active_only = true ) {
+		$state_id = absint( $state_id );
+		$term     = sanitize_title( sanitize_text_field( (string) $name ) );
+
+		if ( $state_id <= 0 || '' === $term ) {
+			return null;
+		}
+
+		$sql = $this->wpdb->prepare(
+			"SELECT * FROM {$this->table_name} WHERE state_id = %d AND normalized_name = %s",
+			$state_id,
+			$term
+		);
+
+		if ( $active_only ) {
+			$sql .= ' AND is_active = 1';
+		}
+
+		$sql .= ' LIMIT 1';
+
+		$row = $this->wpdb->get_row( $sql, ARRAY_A );
+
+		return $row ?: null;
+	}
+
+	/**
+	 * Get a municipality by normalized name.
+	 *
+	 * @param string $name Municipality name.
+	 * @param bool   $active_only Filter active rows.
+	 * @return array<string, mixed>|null
+	 */
+	public function get_by_name( $name, $active_only = true ) {
+		$term = sanitize_title( sanitize_text_field( (string) $name ) );
+
+		if ( '' === $term ) {
+			return null;
+		}
+
+		$sql = $this->wpdb->prepare(
+			"SELECT * FROM {$this->table_name} WHERE normalized_name = %s",
+			$term
+		);
+
+		if ( $active_only ) {
+			$sql .= ' AND is_active = 1';
+		}
+
+		$sql .= ' ORDER BY state_id ASC LIMIT 1';
+
+		$row = $this->wpdb->get_row( $sql, ARRAY_A );
+
+		return $row ?: null;
+	}
+
+	/**
 	 * Count municipalities by state.
 	 *
 	 * @param int $state_id State ID.

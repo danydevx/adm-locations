@@ -51,6 +51,12 @@ class ADMBike_Woo_Locations_Blocks {
 			return;
 		}
 
+		$is_blocks_checkout = false;
+		if ( function_exists( 'has_block' ) ) {
+			$post = get_post();
+			$is_blocks_checkout = $post instanceof WP_Post && has_block( 'woocommerce/checkout', $post );
+		}
+
 		wp_enqueue_style(
 			'admbike-woo-locations-blocks',
 			ADMBIKE_WOO_LOCATIONS_URL . 'assets/css/checkout.css',
@@ -65,6 +71,14 @@ class ADMBike_Woo_Locations_Blocks {
 			ADMBIKE_WOO_LOCATIONS_VERSION,
 			true
 		);
+
+		if ( $is_blocks_checkout ) {
+			wp_add_inline_script(
+				'admbike-woo-locations-blocks',
+				'window.admbikeBlocksData = window.admbikeBlocksData || {}; window.admbikeBlocksData.isBlocksCheckout = true;',
+				'before'
+			);
+		}
 	}
 
 	/**
@@ -79,6 +93,12 @@ class ADMBike_Woo_Locations_Blocks {
 			return $data;
 		}
 
+		$is_blocks_checkout = false;
+		if ( function_exists( 'has_block' ) ) {
+			$post = get_post();
+			$is_blocks_checkout = $post instanceof WP_Post && has_block( 'woocommerce/checkout', $post );
+		}
+
 		$states_repo = new ADMBike_Woo_Locations_State_Repository();
 		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
 		$pc_repo     = new ADMBike_Woo_Locations_Postcode_Repository();
@@ -88,6 +108,7 @@ class ADMBike_Woo_Locations_Blocks {
 		$pcs    = $pc_repo->get_items( array( 'is_active' => 1 ), 'postcode ASC' );
 
 		$data['admbikeLocations'] = array(
+			'isBlocksCheckout' => $is_blocks_checkout,
 			'states'         => array_map(
 				function ( $s ) {
 					return array( 'id' => (int) $s['id'], 'name' => $s['name'], 'code' => $s['code'] );
@@ -108,9 +129,9 @@ class ADMBike_Woo_Locations_Blocks {
 			),
 			'i18n'           => array(
 				'selectState'        => __( 'Selecciona un estado…', 'admbike-woo-locations' ),
-				'selectMunicipality' => __( 'Selecciona un municipio…', 'admbike-woo-locations' ),
+				'selectMunicipality' => __( 'Selecciona una ciudad…', 'admbike-woo-locations' ),
 				'selectPostcode'     => __( 'Selecciona un código postal…', 'admbike-woo-locations' ),
-				'noCoverage'         => __( 'No contamos con cobertura para esta ubicación.', 'admbike-woo-locations' ),
+				'noCoverage'         => admbike_woo_locations()->get_no_coverage_message(),
 				'loading'            => __( 'Cargando…', 'admbike-woo-locations' ),
 			),
 			'restUrl'        => rest_url( 'admbike-woo-locations/v1/' ),
@@ -132,12 +153,18 @@ class ADMBike_Woo_Locations_Blocks {
 		$states_repo = new ADMBike_Woo_Locations_State_Repository();
 		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
 		$pc_repo     = new ADMBike_Woo_Locations_Postcode_Repository();
+		$is_blocks_checkout = false;
+		if ( function_exists( 'has_block' ) ) {
+			$post = get_post();
+			$is_blocks_checkout = $post instanceof WP_Post && has_block( 'woocommerce/checkout', $post );
+		}
 
 		$states = $states_repo->get_active_states();
 		$munis  = $muni_repo->get_items( array( 'is_active' => 1 ), 'name ASC' );
 		$pcs    = $pc_repo->get_items( array( 'is_active' => 1 ), 'postcode ASC' );
 
 		$data = array(
+			'isBlocksCheckout' => $is_blocks_checkout,
 			'states'        => array_map(
 				function ( $s ) {
 					return array( 'id' => (int) $s['id'], 'name' => $s['name'], 'code' => $s['code'] );
@@ -159,9 +186,9 @@ class ADMBike_Woo_Locations_Blocks {
 			'restUrl'       => rest_url( 'admbike-woo-locations/v1/' ),
 			'i18n'          => array(
 				'selectState'        => __( 'Selecciona un estado…', 'admbike-woo-locations' ),
-				'selectMunicipality' => __( 'Selecciona un municipio…', 'admbike-woo-locations' ),
+				'selectMunicipality' => __( 'Selecciona una ciudad…', 'admbike-woo-locations' ),
 				'selectPostcode'     => __( 'Selecciona un código postal…', 'admbike-woo-locations' ),
-				'noCoverage'         => __( 'No contamos con cobertura para esta ubicación.', 'admbike-woo-locations' ),
+				'noCoverage'         => admbike_woo_locations()->get_no_coverage_message(),
 				'loading'            => __( 'Cargando…', 'admbike-woo-locations' ),
 			),
 		);
@@ -210,15 +237,28 @@ class ADMBike_Woo_Locations_Blocks {
 	 * @return void
 	 */
 	public function save_blocks_checkout_data( $order_id, $posted_data ) {
-		if ( empty( $_POST['admbike_blocks_state'] ) ) {
+		$state_code = '';
+		if ( ! empty( $_POST['billing_state'] ) ) {
+			$state_code = sanitize_text_field( wp_unslash( (string) $_POST['billing_state'] ) );
+		} elseif ( ! empty( $_POST['shipping_state'] ) ) {
+			$state_code = sanitize_text_field( wp_unslash( (string) $_POST['shipping_state'] ) );
+		}
+
+		if ( '' === $state_code ) {
 			return;
 		}
 
-		$state_id        = absint( $_POST['admbike_blocks_state'] );
-		$municipality_id = ! empty( $_POST['admbike_blocks_municipality'] ) ? absint( $_POST['admbike_blocks_municipality'] ) : 0;
+		$states_repo     = new ADMBike_Woo_Locations_State_Repository();
+		$state           = $states_repo->get_by_code_or_name( $state_code );
+		$state_id        = $state && ! empty( $state['id'] ) ? absint( $state['id'] ) : 0;
+		$municipality_id = 0;
+		if ( ! empty( $_POST['billing_city'] ) ) {
+			$municipality_id = absint( $_POST['billing_city'] );
+		} elseif ( ! empty( $_POST['shipping_city'] ) ) {
+			$municipality_id = absint( $_POST['shipping_city'] );
+		}
 		$postcode        = isset( $_POST['admbike_blocks_postcode'] ) ? sanitize_text_field( (string) $_POST['admbike_blocks_postcode'] ) : '';
 
-		$states_repo = new ADMBike_Woo_Locations_State_Repository();
 		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
 		$pc_repo     = new ADMBike_Woo_Locations_Postcode_Repository();
 

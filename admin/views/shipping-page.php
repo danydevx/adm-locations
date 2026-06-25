@@ -38,6 +38,8 @@ if ( 'add' === $action || 'edit' === $action ) {
 
 		$match_type = isset( $_POST['match_type'] ) ? sanitize_key( $_POST['match_type'] ) : '';
 		$rule_type  = isset( $_POST['rule_type'] ) ? sanitize_key( $_POST['rule_type'] ) : '';
+		$display_title = isset( $_POST['display_title'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['display_title'] ) ) : '';
+		$customer_message = isset( $_POST['customer_message'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['customer_message'] ) ) : '';
 		$state_id   = isset( $_POST['state_id'] ) ? absint( $_POST['state_id'] ) : 0;
 		$muni_id    = isset( $_POST['municipality_id'] ) ? absint( $_POST['municipality_id'] ) : 0;
 		$pc_id      = isset( $_POST['postcode_id'] ) ? absint( $_POST['postcode_id'] ) : 0;
@@ -94,6 +96,8 @@ if ( 'add' === $action || 'edit' === $action ) {
 		$data = array(
 			'match_type'    => $match_type,
 			'rule_type'     => $rule_type,
+			'display_title' => $display_title,
+			'customer_message' => $customer_message,
 			'state_id'      => $state_id ?: null,
 			'municipality_id' => $muni_id ?: null,
 			'postcode_id'   => $pc_id ?: null,

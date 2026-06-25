@@ -31,6 +31,7 @@ class ADMBike_Woo_Locations_Shipping {
 		add_filter( 'woocommerce_cart_shipping_packages', array( $this, 'apply_checkout_location_to_shipping_packages' ), 5 );
 		add_filter( 'woocommerce_package_rates', array( $this, 'inject_direct_rate' ), 5, 2 );
 		add_filter( 'woocommerce_package_rates', array( $this, 'prefer_plugin_rates' ), 100, 2 );
+		add_filter( 'woocommerce_shipping_method_add_rate', array( $this, 'maybe_set_rate_description' ), 10, 3 );
 	}
 
 	/**
@@ -197,6 +198,13 @@ class ADMBike_Woo_Locations_Shipping {
 			return $rates;
 		}
 
+		$package_id = isset( $package['package_id'] ) ? (string) $package['package_id'] : '0';
+		if ( isset( WC()->session ) && WC()->session ) {
+			$chosen_methods                 = (array) WC()->session->get( 'chosen_shipping_methods', array() );
+			$chosen_methods[ $package_id ] = $rate->get_id();
+			WC()->session->set( 'chosen_shipping_methods', $chosen_methods );
+		}
+
 		$rates[ $rate->get_id() ] = $rate;
 
 		return $rates;
@@ -233,7 +241,11 @@ class ADMBike_Woo_Locations_Shipping {
 			$cost = (float) ( $applied_rule['shipping_cost'] ?? 0 );
 		}
 
-		$rate = new WC_Shipping_Rate( $this->get_rate_id() . '_direct', $this->title, $cost, array(), $this->id, $this->instance_id );
+		$label = ! empty( $applied_rule['display_title'] ) ? sanitize_text_field( (string) $applied_rule['display_title'] ) : $this->title;
+		$customer_message = ! empty( $applied_rule['customer_message'] ) ? sanitize_textarea_field( (string) $applied_rule['customer_message'] ) : '';
+
+		$rate_id = sprintf( '%s:%d:direct', $this->id, absint( $this->instance_id ) );
+		$rate    = new WC_Shipping_Rate( $rate_id, $label, $cost, array(), $this->id, $this->instance_id, 'taxable', $customer_message );
 		$rate->add_meta_data( '_admbike_rule_id', (int) ( $applied_rule['id'] ?? 0 ) );
 		$rate->add_meta_data( '_admbike_rule_type', (string) ( $applied_rule['rule_type'] ?? '' ) );
 		$rate->add_meta_data( '_admbike_match_type', (string) ( $applied_rule['match_type'] ?? '' ) );
@@ -242,6 +254,28 @@ class ADMBike_Woo_Locations_Shipping {
 		$rate->add_meta_data( '_admbike_postcode', $postcode );
 		$rate->add_meta_data( '_admbike_state_id', $state_id );
 		$rate->add_meta_data( '_admbike_municipality_id', $municipality_id );
+		$rate->add_meta_data( '_admbike_display_title', $label );
+		$rate->add_meta_data( '_admbike_customer_message', $customer_message );
+
+		return $rate;
+	}
+
+	/**
+	 * Apply a customer message as rate description for the shipping method flow.
+	 *
+	 * @param WC_Shipping_Rate        $rate Rate object.
+	 * @param array<string, mixed>     $args Rate args.
+	 * @param WC_Shipping_Method|null  $method Shipping method.
+	 * @return WC_Shipping_Rate
+	 */
+	public function maybe_set_rate_description( $rate, $args, $method ) {
+		if ( ! $rate instanceof WC_Shipping_Rate || ! is_object( $method ) || ! isset( $method->id ) || 'admbike_locations' !== $method->id ) {
+			return $rate;
+		}
+
+		if ( ! empty( $args['description'] ) && is_callable( array( $rate, 'set_description' ) ) ) {
+			$rate->set_description( sanitize_textarea_field( (string) $args['description'] ) );
+		}
 
 		return $rate;
 	}
@@ -262,15 +296,36 @@ class ADMBike_Woo_Locations_Shipping {
 		$destination = isset( $package['destination'] ) && is_array( $package['destination'] ) ? $package['destination'] : array();
 		$postcode    = isset( $destination['postcode'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $destination['postcode'] ) : '';
 		$state_code   = isset( $destination['state'] ) ? sanitize_text_field( (string) $destination['state'] ) : '';
+		$city         = isset( $destination['city'] ) ? sanitize_text_field( (string) $destination['city'] ) : '';
 
 		if ( '' !== $postcode ) {
 			$location['postcode'] = $postcode;
 		}
 
 		if ( '' !== $state_code ) {
-			$state = $this->states_repo()->get_by_code( $state_code );
+			$states_repo = $this->states_repo();
+			$state = method_exists( $states_repo, 'get_by_code_or_name' )
+				? $states_repo->get_by_code_or_name( $state_code )
+				: $states_repo->get_by_code( $state_code );
 			if ( $state && ! empty( $state['id'] ) ) {
 				$location['state_id'] = absint( $state['id'] );
+			}
+		}
+
+		if ( empty( $location['municipality_id'] ) && ! empty( $location['state_id'] ) && '' !== $city ) {
+			$municipality = $this->municipalities_repo()->get_by_state_and_name( (int) $location['state_id'], $city );
+			if ( $municipality && ! empty( $municipality['id'] ) ) {
+				$location['municipality_id'] = absint( $municipality['id'] );
+			}
+		}
+
+		if ( empty( $location['municipality_id'] ) && '' !== $city ) {
+			$municipality = $this->municipalities_repo()->get_by_name( $city );
+			if ( $municipality && ! empty( $municipality['id'] ) ) {
+				$location['municipality_id'] = absint( $municipality['id'] );
+				if ( empty( $location['state_id'] ) && ! empty( $municipality['state_id'] ) ) {
+					$location['state_id'] = absint( $municipality['state_id'] );
+				}
 			}
 		}
 
@@ -336,8 +391,43 @@ class ADMBike_Woo_Locations_Shipping {
 			}
 		);
 
-		$best_rate = reset( $plugin_rates );
+		$best_rate    = reset( $plugin_rates );
+		$best_rate_id = key( $plugin_rates );
+		$package_id   = isset( $package['package_id'] ) ? (string) $package['package_id'] : '0';
+		if ( '' !== (string) $best_rate_id && isset( WC()->session ) && WC()->session ) {
+			$chosen_methods                 = (array) WC()->session->get( 'chosen_shipping_methods', array() );
+			$chosen_methods[ $package_id ] = (string) $best_rate_id;
+			WC()->session->set( 'chosen_shipping_methods', $chosen_methods );
+		}
 
-		return is_array( $best_rate ) || is_object( $best_rate ) ? array( key( $plugin_rates ) => $best_rate ) : $plugin_rates;
+		return is_array( $best_rate ) || is_object( $best_rate ) ? array( $best_rate_id => $best_rate ) : $plugin_rates;
+	}
+
+	/**
+	 * Convert a match type into a specificity score.
+	 *
+	 * Lower numbers are more specific.
+	 *
+	 * @param string $match_type Match type.
+	 * @return int
+	 */
+	protected function get_match_specificity( $match_type ) {
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type ) {
+			return 1;
+		}
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE_RANGE === $match_type ) {
+			return 2;
+		}
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_MUNICIPALITY === $match_type ) {
+			return 3;
+		}
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_STATE === $match_type ) {
+			return 4;
+		}
+
+		return 99;
 	}
 }

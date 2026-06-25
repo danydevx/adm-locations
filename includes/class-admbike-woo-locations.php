@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class ADMBike_Woo_Locations {
 
+	public const OPTION_NO_COVERAGE_MESSAGE = 'admbike_no_coverage_message';
+
 	/**
 	 * Repository instances.
 	 *
@@ -35,6 +37,18 @@ class ADMBike_Woo_Locations {
 	 */
 	public function load_textdomain() {
 		load_plugin_textdomain( 'admbike-woo-locations', false, dirname( plugin_basename( ADMBIKE_WOO_LOCATIONS_FILE ) ) . '/languages' );
+	}
+
+	/**
+	 * Get the global no-coverage message.
+	 *
+	 * @return string
+	 */
+	public function get_no_coverage_message() {
+		$default = __( 'No disponible en tu zona', 'admbike-woo-locations' );
+		$message = get_option( self::OPTION_NO_COVERAGE_MESSAGE, $default );
+
+		return is_string( $message ) && '' !== trim( $message ) ? $message : $default;
 	}
 
 	/**

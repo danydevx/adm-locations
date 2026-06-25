@@ -12,10 +12,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 $item       = isset( $item ) ? $item : null;
 $error_msg  = isset( $error_msg ) ? $error_msg : '';
 $is_edit    = ( null !== $item && ! empty( $item ) );
+$woocommerce_mx_states = ADMBike_Woo_Locations_Admin::get_woocommerce_mx_states();
 ?>
 <?php if ( $error_msg ) : ?>
 	<div class="notice notice-error"><p><?php echo esc_html( $error_msg ); ?></p></div>
 <?php endif; ?>
+
+<div class="notice notice-info inline admbike-help-card" style="max-width: 900px;">
+	<h2><?php esc_html_e( 'Reference: WooCommerce MX State Codes', 'admbike-woo-locations' ); ?></h2>
+	<p>
+		<?php esc_html_e( 'Save the exact WooCommerce code in State Code. Example: JA for Jalisco, DF for Ciudad de Mexico, NL for Nuevo Leon.', 'admbike-woo-locations' ); ?>
+	</p>
+	<div class="admbike-help-grid">
+		<?php foreach ( $woocommerce_mx_states as $code => $label ) : ?>
+			<div class="admbike-help-grid__item">
+				<code><?php echo esc_html( $code ); ?></code>
+				<span><?php echo esc_html( $label ); ?></span>
+			</div>
+		<?php endforeach; ?>
+	</div>
+</div>
 
 <form method="post" action="" style="max-width:600px;">
 	<input type="hidden" name="_action" value="<?php echo esc_attr( $is_edit ? 'edit' : 'add' ); ?>">
@@ -29,8 +45,8 @@ $is_edit    = ( null !== $item && ! empty( $item ) );
 			<td>
 				<input type="text" id="code" name="code" class="regular-text" required maxlength="10"
 					value="<?php echo $is_edit ? esc_attr( $item['code'] ) : ''; ?>"
-					placeholder="<?php esc_attr_e( 'e.g. JAL', 'admbike-woo-locations' ); ?>">
-				<p class="description"><?php esc_html_e( 'Two-letter or numeric state code (uppercase).', 'admbike-woo-locations' ); ?></p>
+					placeholder="<?php esc_attr_e( 'e.g. JA', 'admbike-woo-locations' ); ?>">
+				<p class="description"><?php esc_html_e( 'Use the exact WooCommerce MX code (for example: JA, DF, NL).', 'admbike-woo-locations' ); ?></p>
 			</td>
 		</tr>
 		<tr>

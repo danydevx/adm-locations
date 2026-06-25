@@ -44,6 +44,8 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		return array(
 			'match_type'      => '%s',
 			'rule_type'       => '%s',
+			'display_title'   => '%s',
+			'customer_message' => '%s',
 			'state_id'        => '%d',
 			'municipality_id' => '%d',
 			'postcode_id'     => '%d',
@@ -71,6 +73,8 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		$prepared = array(
 			'match_type'      => $match_type,
 			'rule_type'       => isset( $data['rule_type'] ) ? sanitize_key( (string) $data['rule_type'] ) : '',
+			'display_title'   => isset( $data['display_title'] ) ? sanitize_text_field( (string) $data['display_title'] ) : '',
+			'customer_message' => isset( $data['customer_message'] ) ? sanitize_textarea_field( (string) $data['customer_message'] ) : '',
 			'state_id'        => null,
 			'municipality_id' => null,
 			'postcode_id'     => null,

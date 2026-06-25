@@ -97,7 +97,7 @@ class ADMBike_Woo_Locations_Admin {
 	public function enqueue_assets( $hook ) {
 		$hook = (string) $hook;
 
-		if ( false === strpos( $hook, self::STATES_SLUG ) && false === strpos( $hook, self::MUNICIPALITIES_SLUG ) && false === strpos( $hook, self::POSTCODES_SLUG ) && false === strpos( $hook, self::SHIPPING_SLUG ) ) {
+		if ( false === strpos( $hook, self::SLUG ) && false === strpos( $hook, self::STATES_SLUG ) && false === strpos( $hook, self::MUNICIPALITIES_SLUG ) && false === strpos( $hook, self::POSTCODES_SLUG ) && false === strpos( $hook, self::SHIPPING_SLUG ) ) {
 			return;
 		}
 
@@ -123,10 +123,35 @@ class ADMBike_Woo_Locations_Admin {
 	 * @return void
 	 */
 	public function render_admin_page() {
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['admbike_no_coverage_message_nonce'] ) ) {
+			if ( ! $this->verify_post_nonce( 'admbike_no_coverage_message' ) ) {
+				wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+			}
+
+			$message = isset( $_POST['admbike_no_coverage_message'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['admbike_no_coverage_message'] ) ) : '';
+			update_option( ADMBike_Woo_Locations::OPTION_NO_COVERAGE_MESSAGE, $message );
+
+			$this->redirect_with_message( 'success', urlencode( __( 'Coverage message updated successfully.', 'admbike-woo-locations' ) ), array( 'page' => self::SLUG ) );
+		}
+
+		$message = admbike_woo_locations() ? admbike_woo_locations()->get_no_coverage_message() : '';
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'ADM Bike Locations', 'admbike-woo-locations' ); ?></h1>
 			<p><?php esc_html_e( 'Shipping coverage management by State, Municipality and Postal Code.', 'admbike-woo-locations' ); ?></p>
+			<form method="post" action="">
+				<?php wp_nonce_field( 'admbike_no_coverage_message', 'admbike_no_coverage_message_nonce' ); ?>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="admbike_no_coverage_message"><?php esc_html_e( 'No Coverage Message', 'admbike-woo-locations' ); ?></label></th>
+						<td>
+							<textarea id="admbike_no_coverage_message" name="admbike_no_coverage_message" rows="10" class="large-text code"><?php echo esc_textarea( $message ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Shown when the customer selects shipping and no coverage rule applies.', 'admbike-woo-locations' ); ?></p>
+						</td>
+					</tr>
+				</table>
+				<p><button type="submit" class="button button-primary"><?php esc_html_e( 'Save Message', 'admbike-woo-locations' ); ?></button></p>
+			</form>
 			<hr>
 			<p><?php esc_html_e( 'Use the submenu above to manage States, Municipalities, Postal Codes and Shipping Rules.', 'admbike-woo-locations' ); ?></p>
 		</div>
@@ -167,6 +192,48 @@ class ADMBike_Woo_Locations_Admin {
 	 */
 	public function render_shipping_page() {
 		$this->render_view( 'shipping-page' );
+	}
+
+	/**
+	 * Get the WooCommerce MX state codes reference list.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function get_woocommerce_mx_states() {
+		return array(
+			'DF' => __( 'Ciudad de Mexico', 'admbike-woo-locations' ),
+			'JA' => __( 'Jalisco', 'admbike-woo-locations' ),
+			'NL' => __( 'Nuevo Leon', 'admbike-woo-locations' ),
+			'AG' => __( 'Aguascalientes', 'admbike-woo-locations' ),
+			'BC' => __( 'Baja California', 'admbike-woo-locations' ),
+			'BS' => __( 'Baja California Sur', 'admbike-woo-locations' ),
+			'CM' => __( 'Campeche', 'admbike-woo-locations' ),
+			'CS' => __( 'Chiapas', 'admbike-woo-locations' ),
+			'CH' => __( 'Chihuahua', 'admbike-woo-locations' ),
+			'CO' => __( 'Coahuila', 'admbike-woo-locations' ),
+			'CL' => __( 'Colima', 'admbike-woo-locations' ),
+			'DG' => __( 'Durango', 'admbike-woo-locations' ),
+			'GT' => __( 'Guanajuato', 'admbike-woo-locations' ),
+			'GR' => __( 'Guerrero', 'admbike-woo-locations' ),
+			'HG' => __( 'Hidalgo', 'admbike-woo-locations' ),
+			'MX' => __( 'Estado de Mexico', 'admbike-woo-locations' ),
+			'MI' => __( 'Michoacan', 'admbike-woo-locations' ),
+			'MO' => __( 'Morelos', 'admbike-woo-locations' ),
+			'NA' => __( 'Nayarit', 'admbike-woo-locations' ),
+			'OA' => __( 'Oaxaca', 'admbike-woo-locations' ),
+			'PU' => __( 'Puebla', 'admbike-woo-locations' ),
+			'QT' => __( 'Queretaro', 'admbike-woo-locations' ),
+			'QR' => __( 'Quintana Roo', 'admbike-woo-locations' ),
+			'SL' => __( 'San Luis Potosi', 'admbike-woo-locations' ),
+			'SI' => __( 'Sinaloa', 'admbike-woo-locations' ),
+			'SO' => __( 'Sonora', 'admbike-woo-locations' ),
+			'TB' => __( 'Tabasco', 'admbike-woo-locations' ),
+			'TM' => __( 'Tamaulipas', 'admbike-woo-locations' ),
+			'TL' => __( 'Tlaxcala', 'admbike-woo-locations' ),
+			'VE' => __( 'Veracruz', 'admbike-woo-locations' ),
+			'YU' => __( 'Yucatan', 'admbike-woo-locations' ),
+			'ZA' => __( 'Zacatecas', 'admbike-woo-locations' ),
+		);
 	}
 
 	/**
