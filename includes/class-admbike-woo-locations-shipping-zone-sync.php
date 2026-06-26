@@ -79,20 +79,19 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 			);
 		}
 
-		if ( $zone_id > 0 ) {
-			$this->delete_zone( $zone_id );
+		$zone = $zone_id > 0 ? new WC_Shipping_Zone( $zone_id ) : new WC_Shipping_Zone();
+		if ( ! ( $zone instanceof WC_Shipping_Zone ) || absint( $zone->get_id() ) <= 0 ) {
+			$zone = new WC_Shipping_Zone();
 		}
 
-		$zone = new WC_Shipping_Zone();
 		$zone->set_zone_name( $payload['zone_name'] );
 		$zone->set_zone_order( absint( $rule['priority'] ?? 100 ) );
 		$zone->save();
 		$zone->set_locations( $payload['locations'] );
 		$zone->save();
 
-		$instance_id = $zone->add_shipping_method( $payload['method_id'] );
+		$instance_id = $this->sync_zone_method_instance( $zone, $payload['method_id'], $payload, $rule );
 		if ( ! $instance_id ) {
-			$this->delete_zone( $zone->get_id() );
 			return new WP_Error( 'admbike_method_failed', __( 'Failed to add a WooCommerce shipping method to the zone.', 'admbike-woo-locations' ) );
 		}
 
@@ -376,6 +375,48 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		$settings['cost']       = isset( $payload['shipping_cost'] ) ? wc_format_decimal( (float) $payload['shipping_cost'] ) : '0';
 		$settings['type']       = 'class';
 		update_option( 'woocommerce_flat_rate_' . absint( $instance_id ) . '_settings', $settings );
+	}
+
+	/**
+	 * Sync the shipping method instance for a zone.
+	 *
+	 * @param WC_Shipping_Zone        $zone Zone object.
+	 * @param string                  $method_id Shipping method ID.
+	 * @param array<string, mixed>    $payload Zone payload.
+	 * @param array<string, mixed>    $rule Rule row.
+	 * @return int
+	 */
+	protected function sync_zone_method_instance( $zone, $method_id, array $payload, array $rule ) {
+		$existing_methods = method_exists( $zone, 'get_shipping_methods' ) ? (array) $zone->get_shipping_methods( true ) : array();
+		$existing_instance_id = 0;
+
+		foreach ( $existing_methods as $method ) {
+			if ( ! is_object( $method ) || empty( $method->id ) ) {
+				continue;
+			}
+
+			$method_instance_id = isset( $method->instance_id ) ? absint( $method->instance_id ) : 0;
+
+			if ( (string) $method->id === (string) $method_id ) {
+				$existing_instance_id = $method_instance_id;
+				continue;
+			}
+
+			if ( method_exists( $zone, 'delete_shipping_method' ) && $method_instance_id > 0 ) {
+				$zone->delete_shipping_method( $method_instance_id );
+			}
+		}
+
+		if ( $existing_instance_id <= 0 ) {
+			$existing_instance_id = absint( $zone->add_shipping_method( $method_id ) );
+		}
+
+		if ( $existing_instance_id > 0 ) {
+			$this->enable_shipping_method_instance( $existing_instance_id );
+			$this->configure_shipping_method( $existing_instance_id, $payload, $rule );
+		}
+
+		return $existing_instance_id;
 	}
 
 	/**
