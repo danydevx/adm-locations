@@ -282,6 +282,7 @@ $selected_active         = $is_edit ? (int) ( $item['is_active'] ?? 1 ) : ( isse
 	var costFields = document.getElementById('admbike-cost-fields');
 	var stateRequired = document.getElementById('admbike-state-required');
 	var muniRequired = document.getElementById('admbike-muni-required');
+	var $form = jQuery('#admbike-rule-form');
 
 	var selStateId = <?php echo absint( $selected_state_id ); ?>;
 	var selMuniId = <?php echo absint( $selected_municipality_id ); ?>;
@@ -321,6 +322,76 @@ $selected_active         = $is_edit ? (int) ( $item['is_active'] ?? 1 ) : ( isse
 		}
 	}
 
+	function clearValidationErrors() {
+		$form.find('.admbike-field-error').removeClass('admbike-field-error');
+		$form.find('.admbike-validation-error').remove();
+	}
+
+	function showValidationError(selector, message) {
+		var $field = jQuery(selector);
+
+		clearValidationErrors();
+		$field.addClass('admbike-field-error');
+		$field.after('<p class="description admbike-validation-error" style="color:#d63638;">' + message + '</p>');
+		$field.trigger('focus');
+	}
+
+	function validateForm() {
+		var type = matchType ? matchType.value : '';
+
+		clearValidationErrors();
+
+		if ('' === type) {
+			showValidationError('#match_type', '<?php echo esc_js( __( 'Select a match type.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if ( ! ruleType || '' === ruleType.value ) {
+			showValidationError('#rule_type', '<?php echo esc_js( __( 'Select a rule type.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if ( '' === jQuery.trim( jQuery('#rule_title').val() || '' ) ) {
+			showValidationError('#rule_title', '<?php echo esc_js( __( 'Enter a rule title.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if ( 'state' === type || 'municipality' === type || 'postcode_range' === type ) {
+			if ( '' === jQuery.trim( jQuery('#state_id').val() || '' ) ) {
+				showValidationError('#state_id', '<?php echo esc_js( __( 'Select a state.', 'admbike-woo-locations' ) ); ?>');
+				return false;
+			}
+		}
+
+		if ( 'municipality' === type && '' === jQuery.trim( jQuery('#municipality_id').val() || '' ) ) {
+			showValidationError('#municipality_id', '<?php echo esc_js( __( 'Select a municipality.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if ( 'postcode' === type && '' === jQuery.trim( jQuery('#postcode_code').val() || '' ) ) {
+			showValidationError('#postcode_code', '<?php echo esc_js( __( 'Enter a postcode.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if ( 'postcode_range' === type ) {
+			if ( '' === jQuery.trim( jQuery('#postcode_from').val() || '' ) ) {
+				showValidationError('#postcode_from', '<?php echo esc_js( __( 'Enter the starting postcode.', 'admbike-woo-locations' ) ); ?>');
+				return false;
+			}
+			if ( '' === jQuery.trim( jQuery('#postcode_to').val() || '' ) ) {
+				showValidationError('#postcode_to', '<?php echo esc_js( __( 'Enter the ending postcode.', 'admbike-woo-locations' ) ); ?>');
+				return false;
+			}
+		}
+
+		if ( 'paid' === ruleType.value && '' === jQuery.trim( jQuery('#shipping_cost').val() || '' ) ) {
+			showValidationError('#shipping_cost', '<?php echo esc_js( __( 'Enter a shipping cost.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		return true;
+	}
+
 	function filterMunis(stateId) {
 		while (muniSelect.options.length > 1) { muniSelect.remove(1); }
 		if (!stateId) return;
@@ -355,6 +426,12 @@ $selected_active         = $is_edit ? (int) ( $item['is_active'] ?? 1 ) : ( isse
 		});
 		filterMunis(stateSelect.value);
 	}
+
+	$form.on('submit', function(e) {
+		if (!validateForm()) {
+			e.preventDefault();
+		}
+	});
 
 })();
 </script>

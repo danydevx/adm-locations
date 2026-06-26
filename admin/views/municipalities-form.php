@@ -139,25 +139,82 @@ if ( $is_edit ) {
 </div>
 
 <script>
-(function() {
-	var coverageMode = document.getElementById('postcode_coverage_mode');
-	var rangeRow = document.getElementById('postcode_coverage_range_row');
-	var listRow = document.getElementById('postcode_coverage_list_row');
+jQuery(function($) {
+	var $form = $('form').first();
+	var $coverageMode = $('#postcode_coverage_mode');
+	var $rangeRow = $('#postcode_coverage_range_row');
+	var $listRow = $('#postcode_coverage_list_row');
+	var $postcodeFrom = $('#postcode_from');
+	var $postcodeTo = $('#postcode_to');
+	var $postcodeList = $('#postcode_coverage_list');
 
 	function toggleCoverageMode(mode) {
-		if (rangeRow) {
-			rangeRow.style.display = ('range' === mode) ? '' : 'none';
+		if ($rangeRow.length) {
+			$rangeRow.toggle(mode === 'range');
 		}
-		if (listRow) {
-			listRow.style.display = ('list' === mode) ? '' : 'none';
+		if ($listRow.length) {
+			$listRow.toggle(mode === 'list');
 		}
 	}
 
-	if (coverageMode) {
-		coverageMode.addEventListener('change', function() {
-			toggleCoverageMode(this.value);
-		});
-		toggleCoverageMode(coverageMode.value);
+	function clearCoverageErrors() {
+		$form.find('.admbike-field-error').removeClass('admbike-field-error');
+		$form.find('.admbike-coverage-error').remove();
 	}
-})();
+
+	function showCoverageError($field, message) {
+		clearCoverageErrors();
+		$field.addClass('admbike-field-error');
+		$field.after('<p class="description admbike-coverage-error" style="color:#d63638;">' + message + '</p>');
+		$field.trigger('focus');
+	}
+
+	function validateCoverage() {
+		var mode = $coverageMode.val() || '';
+
+		clearCoverageErrors();
+
+		if (!$('#state_id').val()) {
+			showCoverageError($('#state_id'), '<?php echo esc_js( __( 'Select a state.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if (!$('#name').val().trim()) {
+			showCoverageError($('#name'), '<?php echo esc_js( __( 'Enter a municipality name.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if (mode === 'range') {
+			if (!($postcodeFrom.val() || '').trim()) {
+				showCoverageError($postcodeFrom, '<?php echo esc_js( __( 'Enter the first postal code.', 'admbike-woo-locations' ) ); ?>');
+				return false;
+			}
+			if (!($postcodeTo.val() || '').trim()) {
+				showCoverageError($postcodeTo, '<?php echo esc_js( __( 'Enter the last postal code.', 'admbike-woo-locations' ) ); ?>');
+				return false;
+			}
+		}
+
+		if (mode === 'list' && !($postcodeList.val() || '').trim()) {
+			showCoverageError($postcodeList, '<?php echo esc_js( __( 'Enter at least one postal code.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		return true;
+	}
+
+	if ($coverageMode.length) {
+		$coverageMode.on('change', function() {
+			toggleCoverageMode($(this).val() || '');
+			clearCoverageErrors();
+		});
+		toggleCoverageMode($coverageMode.val() || '');
+	}
+
+	$form.on('submit', function(e) {
+		if (!validateCoverage()) {
+			e.preventDefault();
+		}
+	});
+});
 </script>

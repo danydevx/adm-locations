@@ -90,7 +90,7 @@ $selected_municipality_id = $is_edit ? (int) $item['municipality_id'] : 0;
 </form>
 
 <script>
-(function() {
+jQuery(function($) {
 	var allMunis = [
 		<?php
 		$muni_repo_local = new ADMBike_Woo_Locations_Municipality_Repository();
@@ -101,9 +101,10 @@ $selected_municipality_id = $is_edit ? (int) $item['municipality_id'] : 0;
 		?>
 	];
 
+	var $form = $('form').first();
 	var stateSelect = document.getElementById('state_id');
 	var muniSelect = document.getElementById('municipality_id');
-	var editMode = <?php echo $is_edit ? 'true' : 'false'; ?>;
+	var postcodeInput = $('#postcode');
 
 	function filterMunis(stateId) {
 		while (muniSelect.options.length > 1) {
@@ -124,11 +125,55 @@ $selected_municipality_id = $is_edit ? (int) $item['municipality_id'] : 0;
 		});
 	}
 
+	function clearErrors() {
+		$form.find('.admbike-field-error').removeClass('admbike-field-error');
+		$form.find('.admbike-validation-error').remove();
+	}
+
+	function showError($field, message) {
+		clearErrors();
+		$field.addClass('admbike-field-error');
+		$field.after('<p class="description admbike-validation-error" style="color:#d63638;">' + message + '</p>');
+		$field.trigger('focus');
+	}
+
+	function validateForm() {
+		clearErrors();
+
+		if (!$('#state_id').val()) {
+			showError($('#state_id'), '<?php echo esc_js( __( 'Select a state.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if (!$('#municipality_id').val()) {
+			showError($('#municipality_id'), '<?php echo esc_js( __( 'Select a municipality.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if (!postcodeInput.val().trim()) {
+			showError(postcodeInput, '<?php echo esc_js( __( 'Enter a postal code.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		if (!/^[0-9-]+$/.test(String(postcodeInput.val() || ''))) {
+			showError(postcodeInput, '<?php echo esc_js( __( 'Use digits and hyphens only.', 'admbike-woo-locations' ) ); ?>');
+			return false;
+		}
+
+		return true;
+	}
+
 	if (stateSelect && muniSelect) {
 		stateSelect.addEventListener('change', function() {
 			filterMunis(this.value);
 		});
 		filterMunis(stateSelect.value);
 	}
-})();
+
+	$form.on('submit', function(e) {
+		if (!validateForm()) {
+			e.preventDefault();
+		}
+	});
+});
 </script>
