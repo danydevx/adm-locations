@@ -264,7 +264,12 @@
 		}
 
 		input.dataset.admbikeCitySource = '1';
-		input.style.display = 'none';
+		input.style.position = 'absolute';
+		input.style.left = '-9999px';
+		input.style.width = '1px';
+		input.style.height = '1px';
+		input.style.opacity = '0';
+		input.style.pointerEvents = 'none';
 
 		var wrapper = document.createElement('div');
 		wrapper.className = 'wc-blocks-components-select';
@@ -345,6 +350,7 @@
 		input.value = nextValue;
 		input.dispatchEvent(new Event('input', { bubbles: true }));
 		input.dispatchEvent(new Event('change', { bubbles: true }));
+		input.dispatchEvent(new Event('blur', { bubbles: true }));
 	}
 
 	function getSelectedMunicipalityName(select) {

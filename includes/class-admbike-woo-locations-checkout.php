@@ -231,6 +231,36 @@ class ADMBike_Woo_Locations_Checkout {
 				WC()->session->set( $key, null );
 			}
 		}
+
+		if ( is_object( $customer ) ) {
+			if ( method_exists( $customer, 'set_shipping_country' ) ) {
+				$customer->set_shipping_country( ! empty( $location['country'] ) ? (string) $location['country'] : 'MX' );
+			}
+			if ( method_exists( $customer, 'set_shipping_state' ) && ! empty( $location['state_code'] ) ) {
+				$customer->set_shipping_state( (string) $location['state_code'] );
+			}
+			if ( method_exists( $customer, 'set_shipping_city' ) ) {
+				$customer->set_shipping_city( ! empty( $location['city'] ) ? (string) $location['city'] : '' );
+			}
+			if ( method_exists( $customer, 'set_shipping_postcode' ) ) {
+				$customer->set_shipping_postcode( ! empty( $location['postcode'] ) ? (string) $location['postcode'] : '' );
+			}
+		}
+
+		$shipping_address['country'] = ! empty( $location['country'] ) ? (string) $location['country'] : 'MX';
+		if ( ! empty( $location['state_code'] ) ) {
+			$shipping_address['state'] = (string) $location['state_code'];
+		}
+		if ( ! empty( $location['city'] ) ) {
+			$shipping_address['city'] = (string) $location['city'];
+		}
+		if ( ! empty( $location['postcode'] ) ) {
+			$shipping_address['postcode'] = (string) $location['postcode'];
+		}
+
+		if ( $request instanceof ArrayAccess ) {
+			$request['shipping_address'] = $shipping_address;
+		}
 	}
 
 	/**
@@ -430,11 +460,14 @@ class ADMBike_Woo_Locations_Checkout {
 			}
 		}
 
+		$municipality_name = '';
+
 		if ( $municipality_id <= 0 && '' !== $city_value ) {
 			if ( $state_id > 0 ) {
 				$municipality = $muni_repo->get_by_state_and_name( $state_id, $city_value );
 				if ( $municipality && ! empty( $municipality['id'] ) ) {
 					$municipality_id = absint( $municipality['id'] );
+					$municipality_name = ! empty( $municipality['name'] ) ? sanitize_text_field( (string) $municipality['name'] ) : $city_value;
 				}
 			}
 
@@ -442,10 +475,18 @@ class ADMBike_Woo_Locations_Checkout {
 				$municipality = $muni_repo->get_by_name( $city_value );
 				if ( $municipality && ! empty( $municipality['id'] ) ) {
 					$municipality_id = absint( $municipality['id'] );
+					$municipality_name = ! empty( $municipality['name'] ) ? sanitize_text_field( (string) $municipality['name'] ) : $city_value;
 					if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
 						$state_id = absint( $municipality['state_id'] );
 					}
 				}
+			}
+		}
+
+		if ( '' === $municipality_name && $municipality_id > 0 ) {
+			$municipality = $muni_repo->get_by_id( $municipality_id );
+			if ( $municipality && ! empty( $municipality['name'] ) ) {
+				$municipality_name = sanitize_text_field( (string) $municipality['name'] );
 			}
 		}
 
@@ -455,7 +496,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'municipality_id' => $municipality_id,
 			'postcode'        => $postcode,
 			'state_code'      => '' !== $state_value ? strtoupper( $state_value ) : '',
-			'city'            => $city_value,
+			'city'            => '' !== $municipality_name ? $municipality_name : $city_value,
 		);
 	}
 
@@ -509,6 +550,14 @@ class ADMBike_Woo_Locations_Checkout {
 			$city = sanitize_text_field( wp_unslash( (string) $_POST['shipping_city'] ) );
 		} elseif ( ! empty( $session_location['city'] ) ) {
 			$city = sanitize_text_field( (string) $session_location['city'] );
+		}
+
+		if ( '' === $city && $municipality_id > 0 ) {
+			$municipality_repo = new ADMBike_Woo_Locations_Municipality_Repository();
+			$municipality      = $municipality_repo->get_by_id( $municipality_id );
+			if ( $municipality && ! empty( $municipality['name'] ) ) {
+				$city = sanitize_text_field( (string) $municipality['name'] );
+			}
 		}
 
 		return array(
