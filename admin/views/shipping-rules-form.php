@@ -102,6 +102,7 @@ $selected_active         = $is_edit ? (int) ( $item['is_active'] ?? 1 ) : ( isse
 							<option value=""><?php esc_html_e( 'Select a municipality…', 'admbike-woo-locations' ); ?></option>
 						</select>
 						<p class="description"><?php esc_html_e( 'Select a state first to load its municipalities.', 'admbike-woo-locations' ); ?></p>
+						<p class="description"><?php esc_html_e( 'This rule will use the postal coverage configured in the selected municipality.', 'admbike-woo-locations' ); ?></p>
 					</td>
 				</tr>
 			</tbody>

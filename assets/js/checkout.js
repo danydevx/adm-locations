@@ -253,6 +253,24 @@
 		scheduleCheckoutRefresh();
 	}
 
+	function handleNativeStateChange( event ) {
+		var nativeState = event && event.target ? String( $( event.target ).val() || '' ) : '';
+
+		if ( ! nativeState ) {
+			nativeState = getField( '#billing_state' ).val() || getField( '#shipping_state' ).val() || '';
+		}
+
+		var matchedState = nativeState ? getStateByCode( nativeState ) : null;
+		var $state = getField( '#admbike_state_id' );
+
+		if ( $state.length && matchedState && String( $state.val() || '' ) !== String( matchedState.id ) ) {
+			$state.val( String( matchedState.id ) ).trigger( 'change' );
+			return;
+		}
+
+		handleStateChange();
+	}
+
 	function handleMunicipalityChange() {
 		var $state = getField( '#admbike_state_id' );
 		var $municipality = getField( '#admbike_municipality_id' );
@@ -312,6 +330,8 @@
 
 	function bindEvents() {
 		getField( '#admbike_state_id' ).on( 'change', handleStateChange );
+		getField( '#billing_state' ).on( 'change', handleNativeStateChange );
+		getField( '#shipping_state' ).on( 'change', handleNativeStateChange );
 		getField( '#admbike_municipality_id' ).on( 'change', handleMunicipalityChange );
 		getField( '#admbike_postcode_select' ).on( 'change', handlePostcodeChange );
 	}

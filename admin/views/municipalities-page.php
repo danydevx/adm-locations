@@ -48,7 +48,11 @@ if ( 'add' === $action || 'edit' === $action ) {
 
 		$state_id = isset( $_POST['state_id'] ) ? absint( $_POST['state_id'] ) : 0;
 		$name     = isset( $_POST['name'] ) ? sanitize_text_field( (string) $_POST['name'] ) : '';
-		$postcode_coverage = isset( $_POST['postcode_coverage'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['postcode_coverage'] ) ) : '';
+		$coverage_mode = isset( $_POST['postcode_coverage_mode'] ) ? sanitize_key( (string) $_POST['postcode_coverage_mode'] ) : 'range';
+		$coverage_mode = in_array( $coverage_mode, array( 'range', 'list' ), true ) ? $coverage_mode : 'range';
+		$postcode_from = isset( $_POST['postcode_from'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_from'] ) : '';
+		$postcode_to   = isset( $_POST['postcode_to'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_to'] ) : '';
+		$postcode_list = isset( $_POST['postcode_coverage_list'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['postcode_coverage_list'] ) ) : '';
 		$active   = isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 0;
 
 		if ( empty( $state_id ) || empty( $name ) ) {
@@ -64,6 +68,39 @@ if ( 'add' === $action || 'edit' === $action ) {
 			return;
 		}
 
+		if ( 'range' === $coverage_mode && ( '' === $postcode_from || '' === $postcode_to ) ) {
+			$error_msg = __( 'Range coverage requires both start and end postal codes.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
+			return;
+		}
+
+		if ( 'list' === $coverage_mode && '' === trim( $postcode_list ) ) {
+			$error_msg = __( 'List coverage requires at least one postal code.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
+			return;
+		}
+
+		$postcode_coverage = 'range' === $coverage_mode
+			? ( function () use ( $postcode_from, $postcode_to ) {
+				$from = absint( $postcode_from );
+				$to   = absint( $postcode_to );
+
+				if ( $from > $to ) {
+					$tmp  = $from;
+					$from = $to;
+					$to   = $tmp;
+				}
+
+				return sprintf( '%05d-%05d', $from, $to );
+			} )()
+			: $muni_repo->normalize_postcode_list( $postcode_list );
+
+		if ( '' === $postcode_coverage ) {
+			$error_msg = __( 'Postal coverage could not be normalized. Please enter valid 5-digit postcodes.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
+			return;
+		}
+
 		$existing = $muni_repo->get_items( array( 'state_id' => $state_id, 'normalized_name' => sanitize_title( $name ) ), 'id ASC', 1 );
 		if ( ! empty( $existing ) && ( 'add' === $_POST['_action'] || (int) $existing[0]['id'] !== $id ) ) {
 			$error_msg = __( 'A municipality with this name already exists in the selected state.', 'admbike-woo-locations' );
@@ -74,6 +111,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 		$data = array(
 			'state_id'  => $state_id,
 			'name'      => $name,
+			'postcode_coverage_mode' => $coverage_mode,
 			'postcode_coverage' => $postcode_coverage,
 			'is_active' => $active,
 		);
@@ -179,6 +217,7 @@ foreach ( $all_states as $s ) {
 				<tr>
 					<th scope="col" style="width:60px;"><?php esc_html_e( 'ID', 'admbike-woo-locations' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'Name', 'admbike-woo-locations' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Coverage', 'admbike-woo-locations' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'State', 'admbike-woo-locations' ); ?></th>
 					<th scope="col" style="width:100px;"><?php esc_html_e( 'Status', 'admbike-woo-locations' ); ?></th>
 					<th scope="col" style="width:160px;"><?php esc_html_e( 'Actions', 'admbike-woo-locations' ); ?></th>
@@ -206,6 +245,16 @@ foreach ( $all_states as $s ) {
 					<tr>
 						<td><?php echo esc_html( $item['id'] ); ?></td>
 						<td><strong><?php echo esc_html( $item['name'] ); ?></strong></td>
+						<td>
+							<?php
+							$coverage_mode = ! empty( $item['postcode_coverage_mode'] ) ? $item['postcode_coverage_mode'] : 'range';
+							printf(
+								'<code>%1$s</code> %2$s',
+								esc_html( strtoupper( (string) $coverage_mode ) ),
+								esc_html( (string) ( $item['postcode_coverage'] ?? '' ) )
+							);
+							?>
+						</td>
 						<td><?php echo esc_html( isset( $state_map[ $item['state_id'] ] ) ? $state_map[ $item['state_id'] ] : '—' ); ?></td>
 						<td>
 							<?php if ( $item['is_active'] ) : ?>

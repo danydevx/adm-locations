@@ -290,10 +290,33 @@ class ADMBike_Woo_Locations_Store_API {
 				$state_match    = $postcode_state > 0 && $postcode_state === $state_id;
 				$muni_match     = $municipality_id > 0 && $postcode_muni > 0 && $postcode_muni === $municipality_id;
 				if ( ! ( $state_match && $muni_match ) && ! ( $state_match && 0 === $municipality_id && $postcode_muni > 0 ) ) {
-					$postcode = '';
+					$municipality = ( new ADMBike_Woo_Locations_Municipality_Repository() )->get_by_postcode_coverage( $postcode, 0, true );
+					if ( $municipality && ! empty( $municipality['id'] ) ) {
+						$municipality_id = absint( $municipality['id'] );
+						if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
+							$state_id = absint( $municipality['state_id'] );
+						}
+					} else {
+						$postcode = '';
+					}
+				} else {
+					if ( $state_id <= 0 ) {
+						$state_id = $postcode_state;
+					}
+					if ( $municipality_id <= 0 && $postcode_muni > 0 ) {
+						$municipality_id = $postcode_muni;
+					}
 				}
 			} else {
-				$postcode = '';
+				$municipality = ( new ADMBike_Woo_Locations_Municipality_Repository() )->get_by_postcode_coverage( $postcode, $state_id, true );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+					if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
+						$state_id = absint( $municipality['state_id'] );
+					}
+				} else {
+					$postcode = '';
+				}
 			}
 		}
 

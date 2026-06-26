@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION' ) ) {
-		define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.3.2' );
+	define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.5.0' );
 }
 
 class ADMBike_Woo_Locations_Installer {
@@ -77,12 +77,15 @@ class ADMBike_Woo_Locations_Installer {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			code varchar(10) NOT NULL,
 			name varchar(191) NOT NULL,
+			postcode_coverage_mode varchar(10) NOT NULL DEFAULT 'range',
+			postcode_coverage longtext DEFAULT NULL,
 			is_active tinyint(1) NOT NULL DEFAULT 1,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY code (code),
 			KEY name (name),
+			KEY postcode_coverage_mode (postcode_coverage_mode),
 			KEY is_active (is_active)
 		) {$charset_collate};";
 
@@ -91,6 +94,7 @@ class ADMBike_Woo_Locations_Installer {
 			state_id bigint(20) unsigned NOT NULL,
 			name varchar(191) NOT NULL,
 			normalized_name varchar(191) NOT NULL,
+			postcode_coverage_mode varchar(10) NOT NULL DEFAULT 'range',
 			postcode_coverage longtext DEFAULT NULL,
 			is_active tinyint(1) NOT NULL DEFAULT 1,
 			created_at datetime NOT NULL,
@@ -98,6 +102,7 @@ class ADMBike_Woo_Locations_Installer {
 			PRIMARY KEY  (id),
 			UNIQUE KEY state_name (state_id, normalized_name),
 			KEY state_id (state_id),
+			KEY postcode_coverage_mode (postcode_coverage_mode),
 			KEY is_active (is_active)
 		) {$charset_collate};";
 
@@ -156,6 +161,7 @@ class ADMBike_Woo_Locations_Installer {
 		dbDelta( $municipalities_sql );
 		dbDelta( $postcodes_sql );
 		dbDelta( $shipping_rules_sql );
+		self::backfill_municipality_coverage_mode();
 		self::backfill_shipping_rule_title();
 		self::backfill_shipping_rule_postcode_code();
 		self::seed_default_coverage_data();
@@ -180,6 +186,26 @@ class ADMBike_Woo_Locations_Installer {
 			INNER JOIN {$postcodes_table} pc ON pc.id = sr.postcode_id
 			SET sr.postcode_code = pc.postcode
 			WHERE sr.match_type = 'postcode' AND (sr.postcode_code = '' OR sr.postcode_code IS NULL) AND sr.postcode_id IS NOT NULL"
+		);
+	}
+
+	/**
+	 * Backfill the municipality coverage mode for legacy rows.
+	 *
+	 * @return void
+	 */
+	protected static function backfill_municipality_coverage_mode() {
+		global $wpdb;
+
+		$municipalities_table = $wpdb->prefix . 'admbike_locations_municipalities';
+
+		$wpdb->query(
+			"UPDATE {$municipalities_table}
+			SET postcode_coverage_mode = CASE
+				WHEN postcode_coverage IS NULL OR TRIM(postcode_coverage) = '' THEN 'range'
+				WHEN postcode_coverage REGEXP ',' THEN 'list'
+				ELSE 'range'
+			END"
 		);
 	}
 

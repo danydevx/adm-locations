@@ -12,6 +12,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 class ADMBike_Woo_Locations_State_Repository extends ADMBike_Woo_Locations_Abstract_Repository {
 
 	/**
+	 * Whether the table supports the coverage mode column.
+	 *
+	 * @var bool|null
+	 */
+	protected $supports_coverage_mode = null;
+
+	/**
 	 * Get table suffix.
 	 *
 	 * @return string
@@ -27,11 +34,13 @@ class ADMBike_Woo_Locations_State_Repository extends ADMBike_Woo_Locations_Abstr
 	 */
 	protected function get_column_formats() {
 		return array(
-			'code'       => '%s',
-			'name'       => '%s',
-			'is_active'  => '%d',
-			'created_at' => '%s',
-			'updated_at' => '%s',
+			'code'                  => '%s',
+			'name'                  => '%s',
+			'postcode_coverage_mode' => '%s',
+			'postcode_coverage'      => '%s',
+			'is_active'             => '%d',
+			'created_at'            => '%s',
+			'updated_at'            => '%s',
 		);
 	}
 
@@ -42,12 +51,25 @@ class ADMBike_Woo_Locations_State_Repository extends ADMBike_Woo_Locations_Abstr
 	 * @return array<string, mixed>
 	 */
 	protected function prepare_item_for_database( array $data ) {
+		$coverage      = $this->normalize_postcode_coverage( isset( $data['postcode_coverage'] ) ? (string) $data['postcode_coverage'] : '' );
+		$coverage_mode = $this->normalize_postcode_coverage_mode( isset( $data['postcode_coverage_mode'] ) ? (string) $data['postcode_coverage_mode'] : '' );
+
+		if ( '' !== $coverage && '' === $coverage_mode ) {
+			$coverage_mode = 'range';
+		}
+
 		$prepared = array(
-			'code'      => isset( $data['code'] ) ? strtoupper( sanitize_text_field( (string) $data['code'] ) ) : '',
-			'name'      => isset( $data['name'] ) ? sanitize_text_field( (string) $data['name'] ) : '',
-			'is_active' => isset( $data['is_active'] ) ? (int) (bool) $data['is_active'] : 1,
-			'updated_at' => $this->now(),
+			'code'                  => isset( $data['code'] ) ? strtoupper( sanitize_text_field( (string) $data['code'] ) ) : '',
+			'name'                  => isset( $data['name'] ) ? sanitize_text_field( (string) $data['name'] ) : '',
+			'postcode_coverage_mode' => $coverage_mode,
+			'postcode_coverage'      => $coverage,
+			'is_active'             => isset( $data['is_active'] ) ? (int) (bool) $data['is_active'] : 1,
+			'updated_at'            => $this->now(),
 		);
+
+		if ( ! $this->supports_coverage_mode() ) {
+			unset( $prepared['postcode_coverage_mode'] );
+		}
 
 		if ( empty( $data['created_at'] ) ) {
 			$prepared['created_at'] = $this->now();
@@ -83,6 +105,124 @@ class ADMBike_Woo_Locations_State_Repository extends ADMBike_Woo_Locations_Abstr
 	}
 
 	/**
+	 * Normalize coverage mode.
+	 *
+	 * @param string $mode Coverage mode.
+	 * @return string
+	 */
+	public function normalize_postcode_coverage_mode( $mode ) {
+		$mode = sanitize_key( (string) $mode );
+
+		if ( '' === $mode ) {
+			return '';
+		}
+
+		return in_array( $mode, array( 'range', 'list' ), true ) ? $mode : '';
+	}
+
+	/**
+	 * Normalize a list or range coverage string.
+	 *
+	 * @param string $coverage Coverage input.
+	 * @return string
+	 */
+	public function normalize_postcode_coverage( $coverage ) {
+		$coverage = sanitize_textarea_field( (string) $coverage );
+		if ( '' === trim( $coverage ) ) {
+			return '';
+		}
+
+		$segments = preg_split( '/\s*,\s*/', trim( $coverage ) );
+		if ( ! is_array( $segments ) ) {
+			return '';
+		}
+
+		$normalized = array();
+
+		foreach ( $segments as $segment ) {
+			$segment = trim( (string) $segment );
+			if ( '' === $segment ) {
+				continue;
+			}
+
+			if ( preg_match( '/^(\d{1,10})\s*[-–]\s*(\d{1,10})$/u', $segment, $matches ) ) {
+				$from = (int) $matches[1];
+				$to   = (int) $matches[2];
+				if ( $from > $to ) {
+					$tmp  = $from;
+					$from = $to;
+					$to   = $tmp;
+				}
+				$normalized[] = sprintf( '%05d-%05d', $from, $to );
+				continue;
+			}
+
+			if ( preg_match( '/^\d{1,10}$/', $segment ) ) {
+				$normalized[] = sprintf( '%05d', (int) $segment );
+			}
+		}
+
+		$normalized = array_values( array_unique( $normalized ) );
+		sort( $normalized, SORT_NATURAL );
+
+		return implode( ', ', $normalized );
+	}
+
+	/**
+	 * Normalize a postcode for comparisons.
+	 *
+	 * @param string $postcode Postcode input.
+	 * @return string
+	 */
+	public function normalize_postcode( $postcode ) {
+		$code = preg_replace( '/[^0-9]/', '', (string) $postcode );
+
+		return substr( (string) $code, 0, 5 );
+	}
+
+	/**
+	 * Check whether a postcode matches a normalized coverage string.
+	 *
+	 * @param string $postcode Postcode.
+	 * @param string $coverage Coverage string.
+	 * @param string $mode Coverage mode.
+	 * @return bool
+	 */
+	public function postcode_matches_coverage( $postcode, $coverage, $mode = 'range' ) {
+		$postcode = $this->normalize_postcode( $postcode );
+		$coverage = $this->normalize_postcode_coverage( $coverage );
+
+		if ( '' === $postcode || '' === $coverage ) {
+			return false;
+		}
+
+		$segments = preg_split( '/\s*,\s*/', $coverage );
+		if ( ! is_array( $segments ) ) {
+			return false;
+		}
+
+		foreach ( $segments as $segment ) {
+			$segment = trim( (string) $segment );
+			if ( '' === $segment ) {
+				continue;
+			}
+
+			if ( preg_match( '/^(\d{5})-(\d{5})$/', $segment, $matches ) ) {
+				if ( $postcode >= $matches[1] && $postcode <= $matches[2] ) {
+					return true;
+				}
+				continue;
+			}
+
+			if ( preg_match( '/^\d{5}$/', $segment ) && $segment === $postcode ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Get a state by code or normalized name.
 	 *
 	 * @param string $value State code or name.
@@ -106,6 +246,82 @@ class ADMBike_Woo_Locations_State_Repository extends ADMBike_Woo_Locations_Abstr
 		}
 
 		return null;
+	}
+
+	/**
+	 * Get postcode locations for a state coverage string.
+	 *
+	 * @param int  $state_id State ID.
+	 * @param bool $active_only Filter active rows.
+	 * @return array<int, array<string, string>>
+	 */
+	public function get_coverage_locations( $state_id, $active_only = true ) {
+		$state = $this->get_by_id( absint( $state_id ) );
+		if ( ! $state ) {
+			return array();
+		}
+
+		if ( $active_only && empty( $state['is_active'] ) ) {
+			return array();
+		}
+
+		$coverage = $this->normalize_postcode_coverage( (string) ( $state['postcode_coverage'] ?? '' ) );
+		if ( '' === $coverage ) {
+			return array();
+		}
+
+		$locations = array();
+		$segments  = preg_split( '/\s*,\s*/', $coverage );
+
+		if ( ! is_array( $segments ) ) {
+			return array();
+		}
+
+		foreach ( $segments as $segment ) {
+			$segment = trim( (string) $segment );
+			if ( '' === $segment ) {
+				continue;
+			}
+
+			if ( preg_match( '/^(\d{5})-(\d{5})$/', $segment, $matches ) ) {
+				$locations[] = array(
+					'type' => 'postcode',
+					'code' => $matches[1] . '...' . $matches[2],
+				);
+				continue;
+			}
+
+			if ( preg_match( '/^\d{5}$/', $segment ) ) {
+				$locations[] = array(
+					'type' => 'postcode',
+					'code' => $segment,
+				);
+			}
+		}
+
+		return $locations;
+	}
+
+	/**
+	 * Check whether the state table has the coverage mode column.
+	 *
+	 * @return bool
+	 */
+	protected function supports_coverage_mode() {
+		if ( null !== $this->supports_coverage_mode ) {
+			return (bool) $this->supports_coverage_mode;
+		}
+
+		$column = $this->wpdb->get_var(
+			$this->wpdb->prepare(
+				'SHOW COLUMNS FROM ' . $this->table_name . ' LIKE %s',
+				'postcode_coverage_mode'
+			)
+		);
+
+		$this->supports_coverage_mode = ! empty( $column );
+
+		return (bool) $this->supports_coverage_mode;
 	}
 
 	/**

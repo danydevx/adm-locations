@@ -495,6 +495,17 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		$state_id        = absint( $state_id );
 		$municipality_id = absint( $municipality_id );
 		$postcode        = preg_replace( '/[^0-9A-Za-z-]/', '', (string) $postcode );
+		$state_repo      = new ADMBike_Woo_Locations_State_Repository();
+
+		if ( $municipality_id <= 0 && '' !== $postcode ) {
+			$municipality = ( new ADMBike_Woo_Locations_Municipality_Repository() )->get_by_postcode_coverage( $postcode, 0, true );
+			if ( $municipality && ! empty( $municipality['id'] ) ) {
+				$municipality_id = absint( $municipality['id'] );
+				if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
+					$state_id = absint( $municipality['state_id'] );
+				}
+			}
+		}
 
 		$candidates = array();
 
@@ -586,6 +597,14 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 			} elseif ( self::MATCH_STATE === $rule['match_type'] ) {
 				if ( $state_id <= 0 || absint( $rule['state_id'] ) !== $state_id ) {
 					continue;
+				}
+
+				$coverage = (string) ( $rule['postcode_coverage'] ?? '' );
+				if ( '' !== $postcode && '' !== trim( $coverage ) ) {
+					$coverage_mode = isset( $rule['postcode_coverage_mode'] ) ? (string) $rule['postcode_coverage_mode'] : 'range';
+					if ( ! $state_repo->postcode_matches_coverage( $postcode, $coverage, $coverage_mode ) ) {
+						continue;
+					}
 				}
 			} else {
 				continue;

@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'ADMBIKE_WOO_LOCATIONS_VERSION', '0.2.0' );
-define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.4.0' );
+define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.5.0' );
 define( 'ADMBIKE_WOO_LOCATIONS_FILE', __FILE__ );
 define( 'ADMBIKE_WOO_LOCATIONS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ADMBIKE_WOO_LOCATIONS_URL', plugin_dir_url( __FILE__ ) );

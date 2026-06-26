@@ -38,10 +38,48 @@ if ( 'add' === $action || 'edit' === $action ) {
 
 		$code = isset( $_POST['code'] ) ? strtoupper( sanitize_text_field( (string) $_POST['code'] ) ) : '';
 		$name = isset( $_POST['name'] ) ? sanitize_text_field( (string) $_POST['name'] ) : '';
+		$coverage_mode = isset( $_POST['postcode_coverage_mode'] ) ? sanitize_key( (string) $_POST['postcode_coverage_mode'] ) : '';
+		$coverage_mode = in_array( $coverage_mode, array( 'range', 'list' ), true ) ? $coverage_mode : '';
+		$postcode_from = isset( $_POST['postcode_from'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_from'] ) : '';
+		$postcode_to   = isset( $_POST['postcode_to'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_to'] ) : '';
+		$postcode_list = isset( $_POST['postcode_coverage_list'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['postcode_coverage_list'] ) ) : '';
 		$active = isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 0;
 
 		if ( empty( $code ) || empty( $name ) ) {
 			$error_msg = __( 'Code and Name are required.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
+			return;
+		}
+
+		if ( '' !== $coverage_mode && 'range' === $coverage_mode && ( '' === $postcode_from || '' === $postcode_to ) ) {
+			$error_msg = __( 'Range coverage requires both start and end postal codes.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
+			return;
+		}
+
+		if ( '' !== $coverage_mode && 'list' === $coverage_mode && '' === trim( $postcode_list ) ) {
+			$error_msg = __( 'List coverage requires at least one postal code.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
+			return;
+		}
+
+		$postcode_coverage = 'range' === $coverage_mode
+			? ( function () use ( $postcode_from, $postcode_to ) {
+				$from = absint( $postcode_from );
+				$to   = absint( $postcode_to );
+
+				if ( $from > $to ) {
+					$tmp  = $from;
+					$from = $to;
+					$to   = $tmp;
+				}
+
+				return sprintf( '%05d-%05d', $from, $to );
+			} )()
+			: ( 'list' === $coverage_mode ? $states_repo->normalize_postcode_list( $postcode_list ) : '' );
+
+		if ( '' !== $coverage_mode && '' === $postcode_coverage ) {
+			$error_msg = __( 'Postal coverage could not be normalized. Please enter valid 5-digit postcodes.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
 			return;
 		}
@@ -54,9 +92,11 @@ if ( 'add' === $action || 'edit' === $action ) {
 		}
 
 		$data = array(
-			'code'      => $code,
-			'name'      => $name,
-			'is_active' => $active,
+			'code'                   => $code,
+			'name'                   => $name,
+			'postcode_coverage_mode'  => $coverage_mode,
+			'postcode_coverage'       => $postcode_coverage,
+			'is_active'              => $active,
 		);
 
 		if ( 'add' === $_POST['_action'] ) {
@@ -160,6 +200,7 @@ $woocommerce_mx_states = ADMBike_Woo_Locations_Admin::get_woocommerce_mx_states(
 					<th scope="col" class="column-id" style="width:60px;"><?php esc_html_e( 'ID', 'admbike-woo-locations' ); ?></th>
 					<th scope="col" class="column-code"><?php esc_html_e( 'Code', 'admbike-woo-locations' ); ?></th>
 					<th scope="col" class="column-name"><?php esc_html_e( 'Name', 'admbike-woo-locations' ); ?></th>
+					<th scope="col" class="column-coverage"><?php esc_html_e( 'Coverage', 'admbike-woo-locations' ); ?></th>
 					<th scope="col" class="column-status" style="width:100px;"><?php esc_html_e( 'Status', 'admbike-woo-locations' ); ?></th>
 					<th scope="col" class="column-actions" style="width:160px;"><?php esc_html_e( 'Actions', 'admbike-woo-locations' ); ?></th>
 				</tr>
@@ -187,6 +228,17 @@ $woocommerce_mx_states = ADMBike_Woo_Locations_Admin::get_woocommerce_mx_states(
 						<td class="column-id"><?php echo esc_html( $item['id'] ); ?></td>
 						<td class="column-code"><strong><?php echo esc_html( $item['code'] ); ?></strong></td>
 						<td class="column-name"><?php echo esc_html( $item['name'] ); ?></td>
+						<td class="column-coverage">
+							<?php
+							$coverage_mode = ! empty( $item['postcode_coverage_mode'] ) ? $item['postcode_coverage_mode'] : '';
+							$coverage      = (string) ( $item['postcode_coverage'] ?? '' );
+							if ( '' === $coverage ) {
+								echo esc_html__( 'No limit / state only', 'admbike-woo-locations' );
+							} else {
+								echo esc_html( ucfirst( (string) $coverage_mode ) . ': ' . $coverage );
+							}
+							?>
+						</td>
 						<td class="column-status">
 							<?php if ( $item['is_active'] ) : ?>
 								<span class="dashicons dashicons-yes-alt" style="color:#2271b1;" title="<?php esc_attr_e( 'Active', 'admbike-woo-locations' ); ?>"></span>

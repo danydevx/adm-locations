@@ -247,6 +247,15 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 			);
 		}
 
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_STATE === $match_type && $state && ! empty( $state['id'] ) ) {
+			$state_locations = $this->build_state_postcode_locations( absint( $state['id'] ) );
+			if ( is_wp_error( $state_locations ) ) {
+				return $state_locations;
+			}
+
+			$locations = array_merge( $locations, $state_locations );
+		}
+
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_MUNICIPALITY === $match_type && ! empty( $rule['municipality_id'] ) ) {
 			$municipality_locations = $this->build_municipality_postcode_locations( absint( $rule['municipality_id'] ) );
 			if ( is_wp_error( $municipality_locations ) ) {
@@ -520,6 +529,22 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 
 		if ( empty( $locations ) ) {
 			return new WP_Error( 'admbike_municipality_postcodes_missing', __( 'The selected municipality does not have any postcode coverage to sync.', 'admbike-woo-locations' ) );
+		}
+
+		return $locations;
+	}
+
+	/**
+	 * Build postcode locations for a state.
+	 *
+	 * @param int $state_id State ID.
+	 * @return array<int, array<string, string>>|WP_Error
+	 */
+	protected function build_state_postcode_locations( $state_id ) {
+		$locations = $this->states_repo()->get_coverage_locations( $state_id );
+
+		if ( empty( $locations ) ) {
+			return array();
 		}
 
 		return $locations;
