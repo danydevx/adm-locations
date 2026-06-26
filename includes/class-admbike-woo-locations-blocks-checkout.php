@@ -64,9 +64,6 @@ class ADMBike_Woo_Locations_Blocks_Checkout {
 	}
 
 	protected function build_block_data() {
-		$states_repo = new ADMBike_Woo_Locations_State_Repository();
-		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
-
 		$states = array_map(
 			static function ( $state ) {
 				return array(
@@ -75,7 +72,7 @@ class ADMBike_Woo_Locations_Blocks_Checkout {
 					'name' => (string) $state['name'],
 				);
 			},
-			$states_repo->get_active_states()
+			admbike_woo_locations()->get_frontend_states()
 		);
 
 		$municipalities = array_map(
@@ -87,7 +84,7 @@ class ADMBike_Woo_Locations_Blocks_Checkout {
 					'normalized_name'  => isset( $municipality['normalized_name'] ) ? (string) $municipality['normalized_name'] : '',
 				);
 			},
-			$muni_repo->get_items( array( 'is_active' => 1 ), 'state_id ASC, name ASC' )
+			admbike_woo_locations()->get_frontend_municipalities()
 		);
 
 		return array(

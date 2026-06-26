@@ -28,6 +28,7 @@ class ADMBike_Woo_Locations {
 	public function run() {
 		add_action( 'plugins_loaded', array( 'ADMBike_Woo_Locations_Installer', 'maybe_upgrade' ), 5 );
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+		add_filter( 'woocommerce_states', array( $this, 'limit_woocommerce_states' ), 20 );
 	}
 
 	/**
@@ -49,6 +50,41 @@ class ADMBike_Woo_Locations {
 		$message = get_option( self::OPTION_NO_COVERAGE_MESSAGE, $default );
 
 		return is_string( $message ) && '' !== trim( $message ) ? $message : $default;
+	}
+
+	/**
+	 * Limit WooCommerce checkout states to those used by active shipping rules.
+	 *
+	 * @param array<string, array<string, string>> $states States by country.
+	 * @return array<string, array<string, string>>
+	 */
+	public function limit_woocommerce_states( $states ) {
+		if ( ! is_array( $states ) || ! isset( $states['MX'] ) || ! function_exists( 'admbike_woo_locations' ) ) {
+			return $states;
+		}
+
+		$plugin = admbike_woo_locations();
+		if ( ! $plugin instanceof ADMBike_Woo_Locations ) {
+			return $states;
+		}
+
+		$active_states = $plugin->get_active_rule_states();
+		if ( empty( $active_states ) ) {
+			return $states;
+		}
+
+		$filtered = array();
+		foreach ( $states['MX'] as $code => $name ) {
+			if ( isset( $active_states[ $code ] ) ) {
+				$filtered[ $code ] = $name;
+			}
+		}
+
+		if ( ! empty( $filtered ) ) {
+			$states['MX'] = $filtered;
+		}
+
+		return $states;
 	}
 
 	/**
@@ -85,6 +121,101 @@ class ADMBike_Woo_Locations {
 	 */
 	public function shipping_rules() {
 		return $this->get_repository( 'shipping_rules', 'ADMBike_Woo_Locations_Shipping_Rule_Repository' );
+	}
+
+	/**
+	 * Get active state codes referenced by shipping rules.
+	 *
+	 * @return array<string, string>
+	 */
+	public function get_active_rule_states() {
+		$states = array();
+		$rules  = $this->shipping_rules()->get_active_rules();
+
+		foreach ( $rules as $rule ) {
+			$state_id = absint( $rule['state_id'] ?? 0 );
+			if ( $state_id <= 0 ) {
+				continue;
+			}
+
+			$state = $this->states()->get_by_id( $state_id );
+			if ( $state && ! empty( $state['code'] ) ) {
+				$states[ strtoupper( (string) $state['code'] ) ] = (string) $state['name'];
+			}
+		}
+
+		return $states;
+	}
+
+	/**
+	 * Get frontend-visible active states limited to states used by rules.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_frontend_states() {
+		$active_states = $this->get_active_rule_states();
+		$states        = $this->states()->get_active_states();
+
+		if ( empty( $active_states ) ) {
+			return $states;
+		}
+
+		$filtered = array();
+		foreach ( $states as $state ) {
+			if ( ! empty( $state['code'] ) && isset( $active_states[ strtoupper( (string) $state['code'] ) ] ) ) {
+				$filtered[] = $state;
+			}
+		}
+
+		return ! empty( $filtered ) ? $filtered : $states;
+	}
+
+	/**
+	 * Get frontend-visible municipalities limited to active-rule states.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_frontend_municipalities() {
+		$active_states = array_keys( $this->get_active_rule_states() );
+		$munis         = $this->municipalities()->get_items( array( 'is_active' => 1 ), 'name ASC' );
+
+		if ( empty( $active_states ) ) {
+			return $munis;
+		}
+
+		$filtered = array();
+		foreach ( $munis as $muni ) {
+			$state = $this->states()->get_by_id( absint( $muni['state_id'] ?? 0 ) );
+			if ( $state && ! empty( $state['code'] ) && in_array( strtoupper( (string) $state['code'] ), $active_states, true ) ) {
+				$filtered[] = $muni;
+			}
+		}
+
+		return ! empty( $filtered ) ? $filtered : $munis;
+	}
+
+	/**
+	 * Get frontend-visible postcodes limited to active-rule states.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function get_frontend_postcodes() {
+		$active_states = array_keys( $this->get_active_rule_states() );
+		$pcs           = $this->postcodes()->get_items( array( 'is_active' => 1 ), 'postcode ASC' );
+
+		if ( empty( $active_states ) ) {
+			return $pcs;
+		}
+
+		$filtered = array();
+		foreach ( $pcs as $pc ) {
+			$state = $this->states()->get_by_id( absint( $pc['state_id'] ?? 0 ) );
+			if ( $state && ! empty( $state['code'] ) && in_array( strtoupper( (string) $state['code'] ), $active_states, true ) ) {
+				$filtered[] = $pc;
+			}
+		}
+
+		return ! empty( $filtered ) ? $filtered : $pcs;
 	}
 
 	/**

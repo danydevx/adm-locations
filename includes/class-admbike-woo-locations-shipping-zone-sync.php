@@ -99,6 +99,7 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 			return new WP_Error( 'admbike_method_failed', __( 'Failed to add a WooCommerce shipping method to the zone.', 'admbike-woo-locations' ) );
 		}
 
+		$this->enable_shipping_method_instance( (int) $instance_id );
 		$this->configure_shipping_method( $instance_id, $payload, $rule );
 		$this->persist_zone_reference( $rule_id, (int) $zone->get_id(), $payload['zone_name'] );
 
@@ -215,9 +216,12 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		$state = null;
 		$state_code = '';
 		$state_name = '';
+		$match_type = isset( $rule['match_type'] ) ? sanitize_key( (string) $rule['match_type'] ) : '';
 
 		if ( ! empty( $rule['state_id'] ) ) {
 			$state = $this->states_repo()->get_by_id( absint( $rule['state_id'] ) );
+		} elseif ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE_RANGE === $match_type && ! empty( $rule['display_title'] ) ) {
+			$state = $this->states_repo()->get_by_code_or_name( (string) $rule['display_title'] );
 		}
 
 		if ( $state ) {
@@ -243,8 +247,6 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 				'code' => 'MX:' . $state_code,
 			);
 		}
-
-		$match_type = isset( $rule['match_type'] ) ? sanitize_key( (string) $rule['match_type'] ) : '';
 
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_MUNICIPALITY === $match_type && ! empty( $rule['municipality_id'] ) ) {
 			$municipality_locations = $this->build_municipality_postcode_locations( absint( $rule['municipality_id'] ) );
@@ -276,6 +278,15 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 				'code' => $from . '...' . $to,
 			);
 		}
+
+		ADMBike_Woo_Locations_Logger::debug(
+			'Shipping zone payload built',
+			array(
+				'rule_id'  => absint( $rule['id'] ?? 0 ),
+				'zone_name' => $zone_name,
+				'locations' => $locations,
+			)
+		);
 
 		return array(
 			'zone_name' => $zone_name,
@@ -368,6 +379,29 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 	}
 
 	/**
+	 * Explicitly enable a shipping method instance inside the zone table.
+	 *
+	 * @param int $instance_id Instance ID.
+	 * @return void
+	 */
+	protected function enable_shipping_method_instance( $instance_id ) {
+		global $wpdb;
+
+		$wpdb->update(
+			$wpdb->prefix . 'woocommerce_shipping_zone_methods',
+			array(
+				'is_enabled'   => 1,
+				'method_order' => 1,
+			),
+			array(
+				'instance_id' => absint( $instance_id ),
+			),
+			array( '%d', '%d' ),
+			array( '%d' )
+		);
+	}
+
+	/**
 	 * Update the rule row with the synchronized zone reference.
 	 *
 	 * @param int    $rule_id Rule ID.
@@ -430,46 +464,10 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 	 * @return array<int, array<string, string>>
 	 */
 	protected function build_municipality_postcode_locations( $municipality_id ) {
-		$postcodes = $this->postcodes_repo()->get_by_municipality( $municipality_id );
-		if ( empty( $postcodes ) ) {
-			return new WP_Error( 'admbike_municipality_postcodes_missing', __( 'The selected municipality does not have any postcodes to sync.', 'admbike-woo-locations' ) );
-		}
+		$locations = $this->municipalities_repo()->get_coverage_locations( $municipality_id );
 
-		$codes = array();
-		foreach ( $postcodes as $postcode ) {
-			$code = $this->sanitize_postcode( (string) ( $postcode['postcode'] ?? '' ) );
-			if ( '' !== $code ) {
-				$codes[] = $code;
-			}
-		}
-
-		$codes = array_values( array_unique( $codes ) );
-		sort( $codes, SORT_NATURAL );
-
-		$locations = array();
-		$start = null;
-		$previous = null;
-
-		foreach ( $codes as $code ) {
-			$numeric = (int) $code;
-			if ( null === $start ) {
-				$start = $numeric;
-				$previous = $numeric;
-				continue;
-			}
-
-			if ( $numeric === $previous + 1 ) {
-				$previous = $numeric;
-				continue;
-			}
-
-			$locations[] = $this->format_postcode_location( $start, $previous );
-			$start = $numeric;
-			$previous = $numeric;
-		}
-
-		if ( null !== $start ) {
-			$locations[] = $this->format_postcode_location( $start, $previous );
+		if ( empty( $locations ) ) {
+			return new WP_Error( 'admbike_municipality_postcodes_missing', __( 'The selected municipality does not have any postcode coverage to sync.', 'admbike-woo-locations' ) );
 		}
 
 		return $locations;

@@ -99,13 +99,9 @@ class ADMBike_Woo_Locations_Blocks {
 			$is_blocks_checkout = $post instanceof WP_Post && has_block( 'woocommerce/checkout', $post );
 		}
 
-		$states_repo = new ADMBike_Woo_Locations_State_Repository();
-		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
-		$pc_repo     = new ADMBike_Woo_Locations_Postcode_Repository();
-
-		$states = $states_repo->get_active_states();
-		$munis  = $muni_repo->get_items( array( 'is_active' => 1 ), 'name ASC' );
-		$pcs    = $pc_repo->get_items( array( 'is_active' => 1 ), 'postcode ASC' );
+		$states = admbike_woo_locations()->get_frontend_states();
+		$munis  = admbike_woo_locations()->get_frontend_municipalities();
+		$pcs    = admbike_woo_locations()->get_frontend_postcodes();
 
 		$data['admbikeLocations'] = array(
 			'isBlocksCheckout' => $is_blocks_checkout,
@@ -150,18 +146,15 @@ class ADMBike_Woo_Locations_Blocks {
 			return;
 		}
 
-		$states_repo = new ADMBike_Woo_Locations_State_Repository();
-		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
-		$pc_repo     = new ADMBike_Woo_Locations_Postcode_Repository();
 		$is_blocks_checkout = false;
 		if ( function_exists( 'has_block' ) ) {
 			$post = get_post();
 			$is_blocks_checkout = $post instanceof WP_Post && has_block( 'woocommerce/checkout', $post );
 		}
 
-		$states = $states_repo->get_active_states();
-		$munis  = $muni_repo->get_items( array( 'is_active' => 1 ), 'name ASC' );
-		$pcs    = $pc_repo->get_items( array( 'is_active' => 1 ), 'postcode ASC' );
+		$states = admbike_woo_locations()->get_frontend_states();
+		$munis  = admbike_woo_locations()->get_frontend_municipalities();
+		$pcs    = admbike_woo_locations()->get_frontend_postcodes();
 
 		$data = array(
 			'isBlocksCheckout' => $is_blocks_checkout,

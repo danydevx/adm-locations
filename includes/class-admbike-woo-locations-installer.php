@@ -32,6 +32,18 @@ class ADMBike_Woo_Locations_Installer {
 	}
 
 	/**
+	 * Run uninstall cleanup.
+	 *
+	 * @return void
+	 */
+	public static function uninstall() {
+		self::delete_managed_shipping_zones();
+		self::drop_plugin_tables();
+		delete_option( self::DB_VERSION_OPTION );
+		delete_option( 'admbike_no_coverage_message' );
+	}
+
+	/**
 	 * Run migrations when the schema version changes.
 	 *
 	 * @return void
@@ -79,6 +91,7 @@ class ADMBike_Woo_Locations_Installer {
 			state_id bigint(20) unsigned NOT NULL,
 			name varchar(191) NOT NULL,
 			normalized_name varchar(191) NOT NULL,
+			postcode_coverage longtext DEFAULT NULL,
 			is_active tinyint(1) NOT NULL DEFAULT 1,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
@@ -140,41 +153,127 @@ class ADMBike_Woo_Locations_Installer {
 		dbDelta( $postcodes_sql );
 		dbDelta( $shipping_rules_sql );
 		self::seed_default_coverage_data();
-		self::backfill_shipping_zones();
+		self::cleanup_orphaned_shipping_zones();
 
 		update_option( self::DB_VERSION_OPTION, ADMBIKE_WOO_LOCATIONS_DB_VERSION );
 	}
 
 	/**
-	 * Backfill WooCommerce zones for active shipping rules.
+	 * Drop plugin database tables.
 	 *
 	 * @return void
 	 */
-	protected static function backfill_shipping_zones() {
-		if ( ! function_exists( 'admbike_woo_locations_shipping_zone_sync' ) ) {
-			return;
+	protected static function drop_plugin_tables() {
+		global $wpdb;
+
+		$tables = array(
+			$wpdb->prefix . 'admbike_locations_states',
+			$wpdb->prefix . 'admbike_locations_municipalities',
+			$wpdb->prefix . 'admbike_locations_postcodes',
+			$wpdb->prefix . 'admbike_locations_shipping_rules',
+		);
+
+		foreach ( $tables as $table ) {
+			$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+		}
+	}
+
+	/**
+	 * Delete WooCommerce zones managed by the plugin.
+	 *
+	 * @return void
+	 */
+	protected static function delete_managed_shipping_zones() {
+		global $wpdb;
+
+		$zone_ids = array();
+		$shipping_rules_table = $wpdb->prefix . 'admbike_locations_shipping_rules';
+
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $shipping_rules_table ) ) ) {
+			$zone_ids = $wpdb->get_col( "SELECT DISTINCT wc_zone_id FROM {$shipping_rules_table} WHERE wc_zone_id > 0" );
 		}
 
-		$sync = admbike_woo_locations_shipping_zone_sync();
-		if ( ! $sync instanceof ADMBike_Woo_Locations_Shipping_Zone_Sync ) {
+		if ( class_exists( 'WC_Shipping_Zones' ) && ! empty( $zone_ids ) ) {
+			foreach ( $zone_ids as $zone_id ) {
+				WC_Shipping_Zones::delete_zone( absint( $zone_id ) );
+			}
+		}
+
+		if ( $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}woocommerce_shipping_zones'" ) ) {
+			$wpdb->query( "DELETE FROM {$wpdb->prefix}woocommerce_shipping_zone_locations WHERE zone_id IN ( SELECT zone_id FROM {$wpdb->prefix}woocommerce_shipping_zones WHERE zone_name LIKE 'ADM -%' OR zone_name LIKE 'ADM %' )" );
+			$wpdb->query( "DELETE FROM {$wpdb->prefix}woocommerce_shipping_zone_methods WHERE zone_id IN ( SELECT zone_id FROM {$wpdb->prefix}woocommerce_shipping_zones WHERE zone_name LIKE 'ADM -%' OR zone_name LIKE 'ADM %' )" );
+			$wpdb->query( "DELETE FROM {$wpdb->prefix}woocommerce_shipping_zones WHERE zone_name LIKE 'ADM -%' OR zone_name LIKE 'ADM %'" );
+		}
+	}
+
+	/**
+	 * Delete orphaned WooCommerce zones created by this plugin when no rules exist yet.
+	 *
+	 * @return void
+	 */
+	protected static function cleanup_orphaned_shipping_zones() {
+		if ( ! class_exists( 'WC_Shipping_Zones' ) ) {
 			return;
 		}
 
 		$rules_repo = new ADMBike_Woo_Locations_Shipping_Rule_Repository();
-		$rules      = $rules_repo->get_active_rules();
-
-		foreach ( $rules as $rule ) {
-			$result = $sync->sync_rule( $rule );
-			if ( is_wp_error( $result ) ) {
-				ADMBike_Woo_Locations_Logger::warning(
-					'Failed to backfill WooCommerce shipping zone',
-					array(
-						'rule_id' => (int) ( $rule['id'] ?? 0 ),
-						'error'   => $result->get_error_message(),
-					)
-				);
-			}
+		if ( $rules_repo->count_all() > 0 ) {
+			return;
 		}
+
+		$zones = WC_Shipping_Zones::get_shipping_zones();
+		foreach ( $zones as $zone ) {
+			if ( ! $zone instanceof WC_Shipping_Zone ) {
+				continue;
+			}
+
+			$zone_name = method_exists( $zone, 'get_zone_name' ) ? (string) $zone->get_zone_name() : '';
+			if ( 0 !== strpos( $zone_name, 'ADM -' ) && 0 !== strpos( $zone_name, 'ADM ' ) ) {
+				continue;
+			}
+
+			$zone->delete();
+		}
+	}
+
+	/**
+	 * Build a compact postcode coverage string from ranges.
+	 *
+	 * @param array<int, array{from:int,to:int}> $ranges Coverage ranges.
+	 * @return string
+	 */
+	protected static function build_postcode_coverage_string( array $ranges ) {
+		$parts = array();
+
+		foreach ( $ranges as $range ) {
+			$from = isset( $range['from'] ) ? sprintf( '%05d', absint( $range['from'] ) ) : '';
+			$to   = isset( $range['to'] ) ? sprintf( '%05d', absint( $range['to'] ) ) : '';
+
+			if ( '' === $from || '' === $to ) {
+				continue;
+			}
+
+			$parts[] = $from === $to ? $from : $from . '-' . $to;
+		}
+
+		return implode( ', ', array_values( array_unique( $parts ) ) );
+	}
+
+	/**
+	 * Persist compact postcode coverage for a municipality.
+	 *
+	 * @param ADMBike_Woo_Locations_Municipality_Repository $municipalities_repo Municipalities repository.
+	 * @param int                                          $municipality_id Municipality ID.
+	 * @param string                                       $coverage Coverage string.
+	 * @return void
+	 */
+	protected static function update_municipality_postcode_coverage( $municipalities_repo, $municipality_id, $coverage ) {
+		$municipalities_repo->update(
+			absint( $municipality_id ),
+			array(
+				'postcode_coverage' => $coverage,
+			)
+		);
 	}
 
 	/**
@@ -741,30 +840,11 @@ class ADMBike_Woo_Locations_Installer {
 		$mazatlan_state_id = $state_ids['SI'] ?? 0;
 		$mazatlan_municipality_id = $municipality_ids['Mazatlán'] ?? 0;
 		if ( $mazatlan_state_id > 0 && $mazatlan_municipality_id > 0 ) {
-			for ( $postcode = 82000; $postcode <= 82384; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $mazatlan_municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-
-				$postcode_payload = array(
-					'state_id'        => $mazatlan_state_id,
-					'municipality_id' => $mazatlan_municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage(
+				$municipalities_repo,
+				$mazatlan_municipality_id,
+				self::build_postcode_coverage_string( array( array( 'from' => 82000, 'to' => 82384 ) ) )
+			);
 		}
 
 		$ag_postcodes = array(
@@ -787,27 +867,11 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $ag_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $ag_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage(
+				$municipalities_repo,
+				$municipality_id,
+				self::build_postcode_coverage_string( array( $range ) )
+			);
 		}
 
 		$za_postcodes = array(
@@ -835,27 +899,11 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $za_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $za_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage(
+				$municipalities_repo,
+				$municipality_id,
+				self::build_postcode_coverage_string( array( $range ) )
+			);
 		}
 
 		$mi_postcodes = array(
@@ -980,27 +1028,7 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $mi_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $mi_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage( $municipalities_repo, $municipality_id, self::build_postcode_coverage_string( array( $range ) ) );
 		}
 
 		$gt_postcodes = array(
@@ -1058,27 +1086,7 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $gt_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $gt_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage( $municipalities_repo, $municipality_id, self::build_postcode_coverage_string( array( $range ) ) );
 		}
 
 		$qt_postcodes = array(
@@ -1108,27 +1116,7 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $qt_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $qt_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage( $municipalities_repo, $municipality_id, self::build_postcode_coverage_string( array( $range ) ) );
 		}
 
 		$sl_postcodes = array(
@@ -1198,27 +1186,7 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $sl_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $sl_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage( $municipalities_repo, $municipality_id, self::build_postcode_coverage_string( array( $range ) ) );
 		}
 
 		$na_postcodes = array(
@@ -1250,27 +1218,7 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $na_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $na_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage( $municipalities_repo, $municipality_id, self::build_postcode_coverage_string( array( $range ) ) );
 		}
 
 		$nl_postcodes = array(
@@ -1333,27 +1281,7 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $nl_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $nl_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage( $municipalities_repo, $municipality_id, self::build_postcode_coverage_string( array( $range ) ) );
 		}
 
 		$ja_postcodes = array(
@@ -1490,27 +1418,7 @@ class ADMBike_Woo_Locations_Installer {
 			if ( $ja_state_id <= 0 || $municipality_id <= 0 ) {
 				continue;
 			}
-			for ( $postcode = $range['from']; $postcode <= $range['to']; $postcode++ ) {
-				$existing_rows = $postcodes_repo->get_by_postcode( (string) $postcode );
-				$existing_row  = null;
-				foreach ( $existing_rows as $row ) {
-					if ( (int) ( $row['municipality_id'] ?? 0 ) === $municipality_id ) {
-						$existing_row = $row;
-						break;
-					}
-				}
-				$postcode_payload = array(
-					'state_id'        => $ja_state_id,
-					'municipality_id' => $municipality_id,
-					'postcode'        => (string) $postcode,
-					'is_active'       => 1,
-				);
-				if ( $existing_row ) {
-					$postcodes_repo->update( (int) $existing_row['id'], $postcode_payload );
-				} else {
-					$postcodes_repo->create( $postcode_payload );
-				}
-			}
+			self::update_municipality_postcode_coverage( $municipalities_repo, $municipality_id, self::build_postcode_coverage_string( array( $range ) ) );
 		}
 
 		$existing_jalisco_rule = $rules_repo->get_items(

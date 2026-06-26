@@ -49,6 +49,15 @@ $is_edit   = ( null !== $item && ! empty( $item ) );
 			</td>
 		</tr>
 		<tr>
+			<th scope="row">
+				<label for="postcode_coverage"><?php esc_html_e( 'Postal Coverage', 'admbike-woo-locations' ); ?></label>
+			</th>
+			<td>
+				<textarea id="postcode_coverage" name="postcode_coverage" class="large-text code" rows="4" placeholder="44100-44109, 44120, 44125-44130"><?php echo $is_edit ? esc_textarea( $item['postcode_coverage'] ?? '' ) : ''; ?></textarea>
+				<p class="description"><?php esc_html_e( 'Enter exact CPs or ranges separated by commas. Example: 44100-44109, 44120, 44125-44130.', 'admbike-woo-locations' ); ?></p>
+			</td>
+		</tr>
+		<tr>
 			<th scope="row"><?php esc_html_e( 'Active', 'admbike-woo-locations' ); ?></th>
 			<td>
 				<label for="is_active">

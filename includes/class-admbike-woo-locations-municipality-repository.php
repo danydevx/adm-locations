@@ -30,6 +30,7 @@ class ADMBike_Woo_Locations_Municipality_Repository extends ADMBike_Woo_Location
 			'state_id'        => '%d',
 			'name'            => '%s',
 			'normalized_name' => '%s',
+			'postcode_coverage' => '%s',
 			'is_active'       => '%d',
 			'created_at'      => '%s',
 			'updated_at'      => '%s',
@@ -49,6 +50,7 @@ class ADMBike_Woo_Locations_Municipality_Repository extends ADMBike_Woo_Location
 			'state_id'        => isset( $data['state_id'] ) ? absint( $data['state_id'] ) : 0,
 			'name'            => $name,
 			'normalized_name' => sanitize_title( $name ),
+			'postcode_coverage' => $this->normalize_postcode_coverage( isset( $data['postcode_coverage'] ) ? (string) $data['postcode_coverage'] : '' ),
 			'is_active'       => isset( $data['is_active'] ) ? (int) (bool) $data['is_active'] : 1,
 			'updated_at'      => $this->now(),
 		);
@@ -224,5 +226,106 @@ class ADMBike_Woo_Locations_Municipality_Repository extends ADMBike_Woo_Location
 		}
 
 		return $this->count( $where );
+	}
+
+	/**
+	 * Normalize a compact postcode coverage string.
+	 *
+	 * Accepted format: comma-separated exact postcodes and ranges like `44100-44109`.
+	 *
+	 * @param string $coverage Raw coverage.
+	 * @return string
+	 */
+	public function normalize_postcode_coverage( $coverage ) {
+		$coverage = sanitize_textarea_field( (string) $coverage );
+		if ( '' === trim( $coverage ) ) {
+			return '';
+		}
+
+		$segments = preg_split( '/\s*,\s*/', trim( $coverage ) );
+		if ( ! is_array( $segments ) ) {
+			return '';
+		}
+
+		$normalized = array();
+
+		foreach ( $segments as $segment ) {
+			$segment = trim( (string) $segment );
+			if ( '' === $segment ) {
+				continue;
+			}
+
+			if ( preg_match( '/^(\d{1,10})\s*[-–]\s*(\d{1,10})$/u', $segment, $matches ) ) {
+				$from = (int) $matches[1];
+				$to   = (int) $matches[2];
+				if ( $from > $to ) {
+					$tmp  = $from;
+					$from = $to;
+					$to   = $tmp;
+				}
+				$normalized[] = sprintf( '%05d-%05d', $from, $to );
+				continue;
+			}
+
+			if ( preg_match( '/^\d{1,10}$/', $segment ) ) {
+				$normalized[] = sprintf( '%05d', (int) $segment );
+			}
+		}
+
+		return implode( ', ', array_values( array_unique( $normalized ) ) );
+	}
+
+	/**
+	 * Get postcode locations from a municipality coverage string.
+	 *
+	 * @param int  $municipality_id Municipality ID.
+	 * @param bool $active_only Filter active rows.
+	 * @return array<int, array<string, string>>
+	 */
+	public function get_coverage_locations( $municipality_id, $active_only = true ) {
+		$municipality = $this->get_by_id( $municipality_id );
+		if ( ! $municipality ) {
+			return array();
+		}
+
+		if ( $active_only && empty( $municipality['is_active'] ) ) {
+			return array();
+		}
+
+		$coverage = $this->normalize_postcode_coverage( (string) ( $municipality['postcode_coverage'] ?? '' ) );
+		if ( '' === $coverage ) {
+			return array();
+		}
+
+		$locations = array();
+		$segments  = preg_split( '/\s*,\s*/', $coverage );
+
+		if ( ! is_array( $segments ) ) {
+			return array();
+		}
+
+		foreach ( $segments as $segment ) {
+			$segment = trim( (string) $segment );
+			if ( '' === $segment ) {
+				continue;
+			}
+
+			if ( preg_match( '/^(\d{5})-(\d{5})$/', $segment, $matches ) ) {
+				$locations[] = array(
+					'type' => 'postcode',
+					'code' => $matches[1] . '...' . $matches[2],
+				);
+				continue;
+			}
+
+			if ( preg_match( '/^\d{5}$/', $segment ) ) {
+				$locations[] = array(
+					'type' => 'postcode',
+					'code' => $segment,
+				);
+			}
+		}
+
+		return $locations;
 	}
 }

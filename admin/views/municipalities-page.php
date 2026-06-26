@@ -48,6 +48,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 
 		$state_id = isset( $_POST['state_id'] ) ? absint( $_POST['state_id'] ) : 0;
 		$name     = isset( $_POST['name'] ) ? sanitize_text_field( (string) $_POST['name'] ) : '';
+		$postcode_coverage = isset( $_POST['postcode_coverage'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['postcode_coverage'] ) ) : '';
 		$active   = isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 0;
 
 		if ( empty( $state_id ) || empty( $name ) ) {
@@ -73,6 +74,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 		$data = array(
 			'state_id'  => $state_id,
 			'name'      => $name,
+			'postcode_coverage' => $postcode_coverage,
 			'is_active' => $active,
 		);
 

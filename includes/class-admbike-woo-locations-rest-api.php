@@ -331,7 +331,7 @@ class ADMBike_Woo_Locations_REST_API {
 		$is_active = isset( $request['is_active'] ) ? (bool) $request['is_active'] : true;
 
 		$states = $is_active
-			? $this->states_repo()->get_active_states()
+			? admbike_woo_locations()->get_frontend_states()
 			: $this->states_repo()->get_items( array(), 'name ASC' );
 
 		$data = array_map(
@@ -358,14 +358,24 @@ class ADMBike_Woo_Locations_REST_API {
 		$state_id  = isset( $request['state_id'] ) ? absint( $request['state_id'] ) : 0;
 		$is_active = isset( $request['is_active'] ) ? (bool) $request['is_active'] : true;
 
-		if ( $state_id > 0 ) {
-			$municipalities = $this->municipalities_repo()->get_by_state( $state_id, $is_active );
-		} else {
-			$where = array();
-			if ( $is_active ) {
-				$where['is_active'] = 1;
+		if ( $is_active ) {
+			$municipalities = admbike_woo_locations()->get_frontend_municipalities();
+			if ( $state_id > 0 ) {
+				$municipalities = array_values(
+					array_filter(
+						$municipalities,
+						static function ( $muni ) use ( $state_id ) {
+							return isset( $muni['state_id'] ) && (int) $muni['state_id'] === $state_id;
+						}
+					)
+				);
 			}
-			$municipalities = $this->municipalities_repo()->get_items( $where, 'name ASC' );
+		} else {
+			if ( $state_id > 0 ) {
+				$municipalities = $this->municipalities_repo()->get_by_state( $state_id, false );
+			} else {
+				$municipalities = $this->municipalities_repo()->get_items( array(), 'name ASC' );
+			}
 		}
 
 		$data = array_map(
@@ -393,20 +403,35 @@ class ADMBike_Woo_Locations_REST_API {
 		$state_id        = isset( $request['state_id'] ) ? absint( $request['state_id'] ) : 0;
 		$is_active       = isset( $request['is_active'] ) ? (bool) $request['is_active'] : true;
 
-		if ( $municipality_id > 0 ) {
-			$postcodes = $this->postcodes_repo()->get_by_municipality( $municipality_id, $is_active );
-		} elseif ( $state_id > 0 ) {
-			$where = array( 'state_id' => $state_id );
-			if ( $is_active ) {
-				$where['is_active'] = 1;
+		if ( $is_active ) {
+			$postcodes = admbike_woo_locations()->get_frontend_postcodes();
+			if ( $municipality_id > 0 ) {
+				$postcodes = array_values(
+					array_filter(
+						$postcodes,
+						static function ( $pc ) use ( $municipality_id ) {
+							return isset( $pc['municipality_id'] ) && (int) $pc['municipality_id'] === $municipality_id;
+						}
+					)
+				);
+			} elseif ( $state_id > 0 ) {
+				$postcodes = array_values(
+					array_filter(
+						$postcodes,
+						static function ( $pc ) use ( $state_id ) {
+							return isset( $pc['state_id'] ) && (int) $pc['state_id'] === $state_id;
+						}
+					)
+				);
 			}
-			$postcodes = $this->postcodes_repo()->get_items( $where, 'postcode ASC' );
 		} else {
-			$where = array();
-			if ( $is_active ) {
-				$where['is_active'] = 1;
+			if ( $municipality_id > 0 ) {
+				$postcodes = $this->postcodes_repo()->get_by_municipality( $municipality_id, false );
+			} elseif ( $state_id > 0 ) {
+				$postcodes = $this->postcodes_repo()->get_items( array( 'state_id' => $state_id ), 'postcode ASC' );
+			} else {
+				$postcodes = $this->postcodes_repo()->get_items( array(), 'postcode ASC' );
 			}
-			$postcodes = $this->postcodes_repo()->get_items( $where, 'postcode ASC' );
 		}
 
 		$data = array_map(

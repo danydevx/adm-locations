@@ -94,6 +94,12 @@ if ( 'add' === $action || 'edit' === $action ) {
 			return;
 		}
 
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE_RANGE === $match_type && $state_id <= 0 ) {
+			$error_msg = __( 'State is required for postcode range rules.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
+			return;
+		}
+
 		$data = array(
 			'match_type'    => $match_type,
 			'rule_type'     => $rule_type,
