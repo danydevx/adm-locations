@@ -168,6 +168,60 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
+	 * Resolve shipping context from session and package destination.
+	 *
+	 * @param array<string, mixed> $package Shipping package.
+	 * @return array<string, int|string>
+	 */
+	protected function resolve_shipping_context( $package ) {
+		$destination = isset( $package['destination'] ) && is_array( $package['destination'] ) ? $package['destination'] : array();
+		$state_id = 0;
+		$municipality_id = 0;
+
+		if ( isset( WC()->session ) && WC()->session->has_session() ) {
+			$location = (array) WC()->session->get( 'admbike_checkout_location', array() );
+			$state_id = ! empty( $location['state_id'] ) ? absint( $location['state_id'] ) : 0;
+			$municipality_id = ! empty( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0;
+		}
+
+		$destination_state = isset( $destination['state'] ) ? sanitize_text_field( (string) $destination['state'] ) : '';
+		$destination_city  = isset( $destination['city'] ) ? sanitize_text_field( (string) $destination['city'] ) : '';
+
+		if ( $state_id <= 0 && '' !== $destination_state ) {
+			$state = $this->states_repo()->get_by_code_or_name( $destination_state );
+			if ( $state && ! empty( $state['id'] ) ) {
+				$state_id = absint( $state['id'] );
+			}
+		}
+
+		if ( $municipality_id <= 0 && '' !== $destination_city ) {
+			if ( $state_id > 0 ) {
+				$municipality = $this->municipalities_repo()->get_by_state_and_name( $state_id, $destination_city );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+				}
+			}
+
+			if ( $municipality_id <= 0 ) {
+				$municipality = $this->municipalities_repo()->get_by_name( $destination_city );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+					if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
+						$state_id = absint( $municipality['state_id'] );
+					}
+				}
+			}
+		}
+
+		return array(
+			'destination'     => $destination,
+			'state_id'        => $state_id,
+			'municipality_id' => $municipality_id,
+			'postcode'        => $this->get_postcode_from_package( $package ),
+		);
+	}
+
+	/**
 	 * Calculate shipping.
 	 *
 	 * Priority evaluation:
@@ -187,35 +241,10 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 			)
 		);
 
-		$session_location = array();
-		if ( isset( WC()->session ) && WC()->session->has_session() ) {
-			$session_location = (array) WC()->session->get( 'admbike_checkout_location', array() );
-		}
-
-		$state_id        = ! empty( $session_location['state_id'] ) ? absint( $session_location['state_id'] ) : 0;
-		$municipality_id = ! empty( $session_location['municipality_id'] ) ? absint( $session_location['municipality_id'] ) : 0;
-		$postcode        = $this->get_postcode_from_package( $package );
-		$destination     = isset( $package['destination'] ) && is_array( $package['destination'] ) ? $package['destination'] : array();
-		$city            = isset( $destination['city'] ) ? sanitize_text_field( (string) $destination['city'] ) : '';
-
-		if ( $municipality_id <= 0 && '' !== $city ) {
-			if ( $state_id > 0 ) {
-				$municipality = admbike_woo_locations()->municipalities()->get_by_state_and_name( $state_id, $city );
-				if ( $municipality && ! empty( $municipality['id'] ) ) {
-					$municipality_id = absint( $municipality['id'] );
-				}
-			}
-
-			if ( $municipality_id <= 0 ) {
-				$municipality = admbike_woo_locations()->municipalities()->get_by_name( $city );
-				if ( $municipality && ! empty( $municipality['id'] ) ) {
-					$municipality_id = absint( $municipality['id'] );
-					if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
-						$state_id = absint( $municipality['state_id'] );
-					}
-				}
-			}
-		}
+		$resolved = $this->resolve_shipping_context( $package );
+		$state_id = isset( $resolved['state_id'] ) ? absint( $resolved['state_id'] ) : 0;
+		$municipality_id = isset( $resolved['municipality_id'] ) ? absint( $resolved['municipality_id'] ) : 0;
+		$postcode = isset( $resolved['postcode'] ) ? (string) $resolved['postcode'] : '';
 
 		if ( '' !== $postcode && $state_id > 0 ) {
 			$postcode_rows = $this->postcodes_repo()->get_by_postcode( $postcode );
