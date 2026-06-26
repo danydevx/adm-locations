@@ -118,6 +118,8 @@ class ADMBike_Woo_Locations_Installer {
 			currency_code char(3) NOT NULL DEFAULT 'MXN',
 			priority smallint(5) unsigned NOT NULL DEFAULT 100,
 			is_active tinyint(1) NOT NULL DEFAULT 1,
+			wc_zone_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			wc_zone_name varchar(191) NOT NULL DEFAULT '',
 			notes text DEFAULT NULL,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
@@ -129,7 +131,8 @@ class ADMBike_Woo_Locations_Installer {
 			KEY postcode_id (postcode_id),
 			KEY postcode_range (postcode_from, postcode_to),
 			KEY priority (priority),
-			KEY is_active (is_active)
+			KEY is_active (is_active),
+			KEY wc_zone_id (wc_zone_id)
 		) {$charset_collate};";
 
 		dbDelta( $states_sql );
@@ -137,8 +140,41 @@ class ADMBike_Woo_Locations_Installer {
 		dbDelta( $postcodes_sql );
 		dbDelta( $shipping_rules_sql );
 		self::seed_default_coverage_data();
+		self::backfill_shipping_zones();
 
 		update_option( self::DB_VERSION_OPTION, ADMBIKE_WOO_LOCATIONS_DB_VERSION );
+	}
+
+	/**
+	 * Backfill WooCommerce zones for active shipping rules.
+	 *
+	 * @return void
+	 */
+	protected static function backfill_shipping_zones() {
+		if ( ! function_exists( 'admbike_woo_locations_shipping_zone_sync' ) ) {
+			return;
+		}
+
+		$sync = admbike_woo_locations_shipping_zone_sync();
+		if ( ! $sync instanceof ADMBike_Woo_Locations_Shipping_Zone_Sync ) {
+			return;
+		}
+
+		$rules_repo = new ADMBike_Woo_Locations_Shipping_Rule_Repository();
+		$rules      = $rules_repo->get_active_rules();
+
+		foreach ( $rules as $rule ) {
+			$result = $sync->sync_rule( $rule );
+			if ( is_wp_error( $result ) ) {
+				ADMBike_Woo_Locations_Logger::warning(
+					'Failed to backfill WooCommerce shipping zone',
+					array(
+						'rule_id' => (int) ( $rule['id'] ?? 0 ),
+						'error'   => $result->get_error_message(),
+					)
+				);
+			}
+		}
 	}
 
 	/**
@@ -1612,6 +1648,8 @@ class ADMBike_Woo_Locations_Installer {
 				'seed:%'
 			)
 		);
+
+		return;
 
 		$rules = array(
 			array(

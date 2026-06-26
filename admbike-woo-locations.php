@@ -3,7 +3,7 @@
  * Plugin Name:       ADM Bike Woo Locations
  * Plugin URI:        https://admbike.com/
  * Description:       WooCommerce shipping coverage manager by state, municipality and postal code.
- * Version:           0.1.0
+ * Version:           0.2.0
  * Requires at least: 6.0
  * Requires PHP:      8.2
  * Author:            Daniel Lopez (orpot.com)
@@ -17,8 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ADMBIKE_WOO_LOCATIONS_VERSION', '0.1.0' );
-define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.1.0' );
+define( 'ADMBIKE_WOO_LOCATIONS_VERSION', '0.2.0' );
+define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.4.0' );
 define( 'ADMBIKE_WOO_LOCATIONS_FILE', __FILE__ );
 define( 'ADMBIKE_WOO_LOCATIONS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'ADMBIKE_WOO_LOCATIONS_URL', plugin_dir_url( __FILE__ ) );
@@ -30,12 +30,7 @@ require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-municipality-repository.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-postcode-repository.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-rule-repository.php';
-require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-rest-api.php';
-require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-store-api.php';
-require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-blocks-checkout.php';
-require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-method.php';
-require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping.php';
-require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-info.php';
+require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations-shipping-zone-sync.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations.php';
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'admin/class-admbike-woo-locations-admin.php';
 
@@ -59,13 +54,8 @@ if ( is_admin() ) {
 	$GLOBALS['admbike_woo_locations_admin'] = new ADMBike_Woo_Locations_Admin();
 }
 
-new ADMBike_Woo_Locations_REST_API();
-new ADMBike_Woo_Locations_Shipping();
-new ADMBike_Woo_Locations_Store_API();
-
-if ( ! is_admin() ) {
-	new ADMBike_Woo_Locations_Blocks_Checkout();
-	new ADMBike_Woo_Locations_Shipping_Info();
+if ( ! isset( $GLOBALS['admbike_woo_locations_shipping_zone_sync'] ) ) {
+	$GLOBALS['admbike_woo_locations_shipping_zone_sync'] = new ADMBike_Woo_Locations_Shipping_Zone_Sync();
 }
 
 /**
@@ -75,4 +65,13 @@ if ( ! is_admin() ) {
  */
 function admbike_woo_locations_admin() {
 	return $GLOBALS['admbike_woo_locations_admin'] ?? null;
+}
+
+/**
+ * Get the shipping zone sync service instance.
+ *
+ * @return ADMBike_Woo_Locations_Shipping_Zone_Sync|null
+ */
+function admbike_woo_locations_shipping_zone_sync() {
+	return $GLOBALS['admbike_woo_locations_shipping_zone_sync'] ?? null;
 }

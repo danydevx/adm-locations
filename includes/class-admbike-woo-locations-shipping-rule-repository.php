@@ -55,6 +55,8 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 			'currency_code'   => '%s',
 			'priority'        => '%d',
 			'is_active'       => '%d',
+			'wc_zone_id'      => '%d',
+			'wc_zone_name'    => '%s',
 			'notes'           => '%s',
 			'created_at'      => '%s',
 			'updated_at'      => '%s',
@@ -84,6 +86,8 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 			'currency_code'   => 'MXN',
 			'priority'        => 100,
 			'is_active'       => 1,
+			'wc_zone_id'      => 0,
+			'wc_zone_name'    => '',
 			'notes'           => '',
 			'updated_at'      => $this->now(),
 		);
@@ -110,6 +114,8 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 
 		$prepared['priority']  = isset( $data['priority'] ) ? absint( $data['priority'] ) : 100;
 		$prepared['is_active'] = isset( $data['is_active'] ) ? (int) (bool) $data['is_active'] : 1;
+		$prepared['wc_zone_id'] = isset( $data['wc_zone_id'] ) ? absint( $data['wc_zone_id'] ) : 0;
+		$prepared['wc_zone_name'] = isset( $data['wc_zone_name'] ) ? sanitize_text_field( (string) $data['wc_zone_name'] ) : '';
 		$prepared['notes']     = isset( $data['notes'] ) ? sanitize_textarea_field( (string) $data['notes'] ) : '';
 
 		if ( empty( $data['created_at'] ) ) {

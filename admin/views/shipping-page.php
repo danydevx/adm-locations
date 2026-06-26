@@ -13,6 +13,7 @@ $admin = admbike_woo_locations_admin();
 $rules_repo = new ADMBike_Woo_Locations_Shipping_Rule_Repository();
 $states_repo = new ADMBike_Woo_Locations_State_Repository();
 $muni_repo = new ADMBike_Woo_Locations_Municipality_Repository();
+$sync = function_exists( 'admbike_woo_locations_shipping_zone_sync' ) ? admbike_woo_locations_shipping_zone_sync() : null;
 
 $action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : 'list';
 $id     = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
@@ -113,14 +114,36 @@ if ( 'add' === $action || 'edit' === $action ) {
 		if ( 'add' === $_POST['_action'] ) {
 			$result = $rules_repo->create( $data );
 			if ( $result ) {
-				$admin->redirect_with_message( 'success', urlencode( __( 'Rule created successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
+				if ( $sync instanceof ADMBike_Woo_Locations_Shipping_Zone_Sync ) {
+					$sync_result = $sync->sync_rule_by_id( (int) $result );
+					if ( is_wp_error( $sync_result ) ) {
+						$rules_repo->delete( (int) $result );
+						$error_msg = $sync_result->get_error_message();
+						include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
+						return;
+					}
+				}
+
+				$admin->redirect_with_message( 'success', urlencode( __( 'Rule created successfully and WooCommerce zone synced.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
 			} else {
 				$error_msg = __( 'Failed to create rule.', 'admbike-woo-locations' );
 			}
 		} else {
 			$result = $rules_repo->update( $id, $data );
 			if ( $result ) {
-				$admin->redirect_with_message( 'success', urlencode( __( 'Rule updated successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
+				if ( $sync instanceof ADMBike_Woo_Locations_Shipping_Zone_Sync ) {
+					$sync_result = $sync->sync_rule_by_id( $id );
+					if ( is_wp_error( $sync_result ) ) {
+						if ( $item ) {
+							$rules_repo->update( $id, $item );
+						}
+						$error_msg = $sync_result->get_error_message();
+						include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
+						return;
+					}
+				}
+
+				$admin->redirect_with_message( 'success', urlencode( __( 'Rule updated successfully and WooCommerce zone synced.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
 			} else {
 				$error_msg = __( 'Failed to update rule.', 'admbike-woo-locations' );
 			}
@@ -139,6 +162,16 @@ if ( 'delete' === $action ) {
 		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
 	}
 
+	$item = $rules_repo->get_by_id( $id );
+	if ( $sync instanceof ADMBike_Woo_Locations_Shipping_Zone_Sync ) {
+		$sync_result = $sync->delete_zone_for_rule( $item ? $item : $id );
+		if ( is_wp_error( $sync_result ) ) {
+			$error_msg = $sync_result->get_error_message();
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
+			return;
+		}
+	}
+
 	$result = $rules_repo->delete( $id );
 	$admin->redirect_with_message( $result ? 'success' : 'error', urlencode( $result ? __( 'Rule deleted.', 'admbike-woo-locations' ) : __( 'Failed to delete rule.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
 	return;
@@ -152,6 +185,14 @@ if ( 'toggle' === $action ) {
 	$item = $rules_repo->get_by_id( $id );
 	if ( $item ) {
 		$rules_repo->update( $id, array( 'is_active' => $item['is_active'] ? 0 : 1 ) );
+		if ( $sync instanceof ADMBike_Woo_Locations_Shipping_Zone_Sync ) {
+			$sync_result = $sync->sync_rule_by_id( $id );
+			if ( is_wp_error( $sync_result ) ) {
+				$rules_repo->update( $id, $item );
+				$admin->redirect_with_message( 'error', urlencode( $sync_result->get_error_message() ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
+				return;
+			}
+		}
 	}
 
 	$admin->redirect_with_message( 'success', urlencode( __( 'Status updated.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
