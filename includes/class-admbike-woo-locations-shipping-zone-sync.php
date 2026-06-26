@@ -81,9 +81,6 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 
 		if ( $zone_id > 0 ) {
 			$this->delete_zone( $zone_id );
-			if ( $this->zone_exists( $zone_id ) ) {
-				return new WP_Error( 'admbike_zone_delete_failed', __( 'The existing WooCommerce zone could not be replaced.', 'admbike-woo-locations' ) );
-			}
 		}
 
 		$zone = new WC_Shipping_Zone();
@@ -102,6 +99,7 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		$this->enable_shipping_method_instance( (int) $instance_id );
 		$this->configure_shipping_method( $instance_id, $payload, $rule );
 		$this->persist_zone_reference( $rule_id, (int) $zone->get_id(), $payload['zone_name'] );
+		$this->clear_shipping_cache();
 
 		ADMBike_Woo_Locations_Logger::info(
 			'Shipping zone synced',
@@ -142,6 +140,8 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		if ( $rule_id > 0 ) {
 			$this->persist_zone_reference( $rule_id, 0, '' );
 		}
+
+		$this->clear_shipping_cache();
 
 		ADMBike_Woo_Locations_Logger::info(
 			'Shipping zone removed',
@@ -455,6 +455,17 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		}
 
 		return (bool) WC_Shipping_Zones::get_zone( absint( $zone_id ) );
+	}
+
+	/**
+	 * Clear WooCommerce shipping caches after a zone change.
+	 *
+	 * @return void
+	 */
+	protected function clear_shipping_cache() {
+		if ( function_exists( 'wc_delete_shipping_transients' ) ) {
+			wc_delete_shipping_transients();
+		}
 	}
 
 	/**
