@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION' ) ) {
-	define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.3.0' );
+		define( 'ADMBIKE_WOO_LOCATIONS_DB_VERSION', '1.3.2' );
 }
 
 class ADMBike_Woo_Locations_Installer {
@@ -120,11 +120,13 @@ class ADMBike_Woo_Locations_Installer {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			match_type varchar(20) NOT NULL,
 			rule_type varchar(20) NOT NULL,
+			rule_title varchar(191) NOT NULL DEFAULT '',
 			display_title varchar(191) NOT NULL DEFAULT '',
 			customer_message text DEFAULT NULL,
 			state_id bigint(20) unsigned DEFAULT NULL,
 			municipality_id bigint(20) unsigned DEFAULT NULL,
 			postcode_id bigint(20) unsigned DEFAULT NULL,
+			postcode_code varchar(10) NOT NULL DEFAULT '',
 			postcode_from varchar(10) NOT NULL DEFAULT '',
 			postcode_to varchar(10) NOT NULL DEFAULT '',
 			shipping_cost decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -139,9 +141,11 @@ class ADMBike_Woo_Locations_Installer {
 			PRIMARY KEY  (id),
 			KEY match_type (match_type),
 			KEY rule_type (rule_type),
+			KEY rule_title (rule_title),
 			KEY state_id (state_id),
 			KEY municipality_id (municipality_id),
 			KEY postcode_id (postcode_id),
+			KEY postcode_code (postcode_code),
 			KEY postcode_range (postcode_from, postcode_to),
 			KEY priority (priority),
 			KEY is_active (is_active),
@@ -152,10 +156,54 @@ class ADMBike_Woo_Locations_Installer {
 		dbDelta( $municipalities_sql );
 		dbDelta( $postcodes_sql );
 		dbDelta( $shipping_rules_sql );
+		self::backfill_shipping_rule_title();
+		self::backfill_shipping_rule_postcode_code();
 		self::seed_default_coverage_data();
 		self::cleanup_orphaned_shipping_zones();
 
 		update_option( self::DB_VERSION_OPTION, ADMBIKE_WOO_LOCATIONS_DB_VERSION );
+	}
+
+	/**
+	 * Backfill exact postcode text for legacy shipping rules.
+	 *
+	 * @return void
+	 */
+	protected static function backfill_shipping_rule_postcode_code() {
+		global $wpdb;
+
+		$shipping_rules_table = $wpdb->prefix . 'admbike_locations_shipping_rules';
+		$postcodes_table      = $wpdb->prefix . 'admbike_locations_postcodes';
+
+		$wpdb->query(
+			"UPDATE {$shipping_rules_table} sr
+			INNER JOIN {$postcodes_table} pc ON pc.id = sr.postcode_id
+			SET sr.postcode_code = pc.postcode
+			WHERE sr.match_type = 'postcode' AND (sr.postcode_code = '' OR sr.postcode_code IS NULL) AND sr.postcode_id IS NOT NULL"
+		);
+	}
+
+	/**
+	 * Backfill the admin rule title for legacy shipping rules.
+	 *
+	 * @return void
+	 */
+	protected static function backfill_shipping_rule_title() {
+		global $wpdb;
+
+		$shipping_rules_table = $wpdb->prefix . 'admbike_locations_shipping_rules';
+
+		$wpdb->query(
+			"UPDATE {$shipping_rules_table}
+			SET rule_title = CASE
+				WHEN rule_title IS NULL OR rule_title = '' THEN
+					CASE
+						WHEN display_title IS NOT NULL AND display_title <> '' THEN display_title
+						ELSE CONCAT('Rule #', id)
+					END
+				ELSE rule_title
+			END"
+		);
 	}
 
 	/**

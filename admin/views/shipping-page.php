@@ -39,11 +39,15 @@ if ( 'add' === $action || 'edit' === $action ) {
 
 		$match_type = isset( $_POST['match_type'] ) ? sanitize_key( $_POST['match_type'] ) : '';
 		$rule_type  = isset( $_POST['rule_type'] ) ? sanitize_key( $_POST['rule_type'] ) : '';
+		$rule_title = isset( $_POST['rule_title'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['rule_title'] ) ) : '';
 		$display_title = isset( $_POST['display_title'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['display_title'] ) ) : '';
 		$customer_message = isset( $_POST['customer_message'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['customer_message'] ) ) : '';
 		$state_id   = isset( $_POST['state_id'] ) ? absint( $_POST['state_id'] ) : 0;
 		$muni_id    = isset( $_POST['municipality_id'] ) ? absint( $_POST['municipality_id'] ) : 0;
-		$pc_id      = isset( $_POST['postcode_id'] ) ? absint( $_POST['postcode_id'] ) : 0;
+		$pc_id      = 0;
+		$pc_code    = isset( $_POST['postcode_code'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_code'] ) : '';
+		$pc_code    = '' !== $pc_code ? substr( (string) $pc_code, 0, 5 ) : '';
+		$pc_lookup   = null;
 		$pc_from     = isset( $_POST['postcode_from'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $_POST['postcode_from'] ) : '';
 		$pc_to       = isset( $_POST['postcode_to'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $_POST['postcode_to'] ) : '';
 		$cost       = isset( $_POST['shipping_cost'] ) ? (float) $_POST['shipping_cost'] : 0;
@@ -70,6 +74,12 @@ if ( 'add' === $action || 'edit' === $action ) {
 			return;
 		}
 
+		if ( '' === trim( $rule_title ) ) {
+			$error_msg = __( 'Rule Title is required.', 'admbike-woo-locations' );
+			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
+			return;
+		}
+
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_STATE === $match_type && $state_id <= 0 ) {
 			$error_msg = __( 'State is required for state-level rules.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
@@ -82,10 +92,17 @@ if ( 'add' === $action || 'edit' === $action ) {
 			return;
 		}
 
-		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type && $pc_id <= 0 ) {
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type && '' === $pc_code ) {
 			$error_msg = __( 'Postcode is required for postcode-level rules.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
 			return;
+		}
+
+		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type && '' !== $pc_code ) {
+			$pc_lookup = $postcodes_repo->get_by_postcode( $pc_code );
+			if ( ! empty( $pc_lookup ) && ! empty( $pc_lookup[0]['id'] ) ) {
+				$pc_id = absint( $pc_lookup[0]['id'] );
+			}
 		}
 
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE_RANGE === $match_type && ( empty( $pc_from ) || empty( $pc_to ) ) ) {
@@ -103,10 +120,12 @@ if ( 'add' === $action || 'edit' === $action ) {
 		$data = array(
 			'match_type'    => $match_type,
 			'rule_type'     => $rule_type,
+			'rule_title'    => $rule_title,
 			'display_title' => $display_title,
 			'customer_message' => $customer_message,
 			'state_id'      => $state_id ?: null,
 			'municipality_id' => $muni_id ?: null,
+			'postcode_code' => $pc_code,
 			'postcode_id'   => $pc_id ?: null,
 			'postcode_from' => $pc_from,
 			'postcode_to'   => $pc_to,
@@ -241,6 +260,7 @@ if ( 'preview' === $action ) {
 			<thead>
 				<tr>
 					<th style="width:60px;">#</th>
+					<th><?php esc_html_e( 'Rule Title', 'admbike-woo-locations' ); ?></th>
 					<th><?php esc_html_e( 'Match Type', 'admbike-woo-locations' ); ?></th>
 					<th><?php esc_html_e( 'Scope', 'admbike-woo-locations' ); ?></th>
 					<th><?php esc_html_e( 'Rule Type', 'admbike-woo-locations' ); ?></th>
@@ -253,6 +273,7 @@ if ( 'preview' === $action ) {
 				<?php foreach ( $rules as $i => $rule ) : ?>
 					<tr style="<?php echo ( 0 === $i ) ? 'background:#e7f5e7;' : ''; ?>">
 						<td><?php echo esc_html( $i + 1 ); ?></td>
+						<td><?php echo esc_html( ! empty( $rule['rule_title'] ) ? $rule['rule_title'] : ( $rule['display_title'] ?? '' ) ); ?></td>
 						<td><code><?php echo esc_html( $rule['match_type'] ); ?></code></td>
 						<td>
 							<?php
@@ -261,7 +282,7 @@ if ( 'preview' === $action ) {
 							} elseif ( 'municipality' === $rule['match_type'] ) {
 								echo esc_html( $muni_map[ $rule['municipality_id'] ] ?? '—' );
 							} elseif ( 'postcode' === $rule['match_type'] ) {
-								echo esc_html( $pc_map[ $rule['postcode_id'] ] ?? '—' );
+								echo esc_html( ! empty( $rule['postcode_code'] ) ? $rule['postcode_code'] : ( $pc_map[ $rule['postcode_id'] ] ?? '—' ) );
 							} elseif ( 'postcode_range' === $rule['match_type'] ) {
 								echo esc_html( $rule['postcode_from'] . ' – ' . $rule['postcode_to'] );
 							}
@@ -341,7 +362,7 @@ $munis_all  = $muni_repo_local->get_items( array(), 'name ASC' );
 	<form method="get" action="">
 		<input type="hidden" name="page" value="<?php echo esc_attr( ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ); ?>">
 		<p class="search-box">
-			<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by notes, postcode…', 'admbike-woo-locations' ); ?>">
+			<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by title, notes, postcode…', 'admbike-woo-locations' ); ?>">
 			<select name="rule_type" style="vertical-align:middle;">
 				<option value=""><?php esc_html_e( 'All rule types', 'admbike-woo-locations' ); ?></option>
 				<option value="free" <?php selected( 'free', $rule_type ); ?>><?php esc_html_e( 'Free', 'admbike-woo-locations' ); ?></option>
@@ -374,6 +395,7 @@ $munis_all  = $muni_repo_local->get_items( array(), 'name ASC' );
 			<thead>
 				<tr>
 					<th style="width:50px;"><?php esc_html_e( 'ID', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Rule Title', 'admbike-woo-locations' ); ?></th>
 					<th style="width:120px;"><?php esc_html_e( 'Match Type', 'admbike-woo-locations' ); ?></th>
 					<th><?php esc_html_e( 'Scope', 'admbike-woo-locations' ); ?></th>
 					<th style="width:100px;"><?php esc_html_e( 'Rule Type', 'admbike-woo-locations' ); ?></th>
@@ -408,7 +430,7 @@ $munis_all  = $muni_repo_local->get_items( array(), 'name ASC' );
 					} elseif ( 'municipality' === $item['match_type'] ) {
 						$scope = $muni_map[ $item['municipality_id'] ] ?? '—';
 					} elseif ( 'postcode' === $item['match_type'] ) {
-						$scope = $pc_map[ $item['postcode_id'] ] ?? '—';
+						$scope = ! empty( $item['postcode_code'] ) ? $item['postcode_code'] : ( $pc_map[ $item['postcode_id'] ] ?? '—' );
 					} elseif ( 'postcode_range' === $item['match_type'] ) {
 						$scope = esc_html( $item['postcode_from'] ) . ' – ' . esc_html( $item['postcode_to'] );
 					}
@@ -433,6 +455,7 @@ $munis_all  = $muni_repo_local->get_items( array(), 'name ASC' );
 					?>
 					<tr>
 						<td><?php echo esc_html( $item['id'] ); ?></td>
+						<td><?php echo esc_html( ! empty( $item['rule_title'] ) ? $item['rule_title'] : ( $item['display_title'] ?? '' ) ); ?></td>
 						<td><code><?php echo esc_html( $item['match_type'] ); ?></code></td>
 						<td><?php echo esc_html( $scope ); ?></td>
 						<td><?php echo $rule_type_badge; ?></td>

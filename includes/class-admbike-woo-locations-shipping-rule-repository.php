@@ -12,6 +12,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locations_Abstract_Repository {
 
 	/**
+	 * Whether the table supports the exact postcode text column.
+	 *
+	 * @var bool|null
+	 */
+	protected $supports_postcode_code = null;
+
+	/**
+	 * Whether the table supports the rule title column.
+	 *
+	 * @var bool|null
+	 */
+	protected $supports_rule_title = null;
+
+	/**
 	 * Match type constants.
 	 */
 	public const MATCH_STATE          = 'state';
@@ -44,11 +58,13 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		return array(
 			'match_type'      => '%s',
 			'rule_type'       => '%s',
+			'rule_title'      => '%s',
 			'display_title'   => '%s',
 			'customer_message' => '%s',
 			'state_id'        => '%d',
 			'municipality_id' => '%d',
 			'postcode_id'     => '%d',
+			'postcode_code'   => '%s',
 			'postcode_from'   => '%s',
 			'postcode_to'     => '%s',
 			'shipping_cost'   => '%f',
@@ -75,11 +91,13 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		$prepared = array(
 			'match_type'      => $match_type,
 			'rule_type'       => isset( $data['rule_type'] ) ? sanitize_key( (string) $data['rule_type'] ) : '',
+			'rule_title'      => isset( $data['rule_title'] ) ? sanitize_text_field( (string) $data['rule_title'] ) : '',
 			'display_title'   => isset( $data['display_title'] ) ? sanitize_text_field( (string) $data['display_title'] ) : '',
 			'customer_message' => isset( $data['customer_message'] ) ? sanitize_textarea_field( (string) $data['customer_message'] ) : '',
 			'state_id'        => null,
 			'municipality_id' => null,
 			'postcode_id'     => null,
+			'postcode_code'   => '',
 			'postcode_from'   => '',
 			'postcode_to'     => '',
 			'shipping_cost'   => 0,
@@ -98,11 +116,20 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 			$prepared['state_id']        = isset( $data['state_id'] ) ? absint( $data['state_id'] ) : null;
 			$prepared['municipality_id'] = isset( $data['municipality_id'] ) ? absint( $data['municipality_id'] ) : null;
 		} elseif ( self::MATCH_POSTCODE === $match_type ) {
-			$prepared['postcode_id'] = isset( $data['postcode_id'] ) ? absint( $data['postcode_id'] ) : null;
+			$prepared['postcode_code'] = $this->sanitize_postcode_code( isset( $data['postcode_code'] ) ? (string) $data['postcode_code'] : (string) ( $data['postcode'] ?? '' ) );
+			$prepared['postcode_id']   = isset( $data['postcode_id'] ) ? absint( $data['postcode_id'] ) : null;
+			if ( '' === $prepared['postcode_code'] && ! empty( $prepared['postcode_id'] ) ) {
+				$prepared['postcode_code'] = $this->get_rule_postcode_code(
+					array(
+						'postcode_id' => $prepared['postcode_id'],
+					)
+				);
+			}
 		} elseif ( self::MATCH_POSTCODE_RANGE === $match_type ) {
 			$prepared['state_id']    = isset( $data['state_id'] ) ? absint( $data['state_id'] ) : null;
 			$prepared['postcode_from'] = isset( $data['postcode_from'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $data['postcode_from'] ) : '';
 			$prepared['postcode_to']   = isset( $data['postcode_to'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $data['postcode_to'] ) : '';
+			$prepared['postcode_code'] = '';
 		}
 
 		if ( self::RULE_PAID === ( $data['rule_type'] ?? '' ) ) {
@@ -118,11 +145,63 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		$prepared['wc_zone_name'] = isset( $data['wc_zone_name'] ) ? sanitize_text_field( (string) $data['wc_zone_name'] ) : '';
 		$prepared['notes']     = isset( $data['notes'] ) ? sanitize_textarea_field( (string) $data['notes'] ) : '';
 
+		if ( ! $this->supports_rule_title() ) {
+			unset( $prepared['rule_title'] );
+		}
+
+		if ( ! $this->supports_postcode_code() ) {
+			unset( $prepared['postcode_code'] );
+		}
+
 		if ( empty( $data['created_at'] ) ) {
 			$prepared['created_at'] = $this->now();
 		}
 
 		return $prepared;
+	}
+
+	/**
+	 * Check whether the shipping rules table has the postcode_code column.
+	 *
+	 * @return bool
+	 */
+	protected function supports_postcode_code() {
+		if ( null !== $this->supports_postcode_code ) {
+			return (bool) $this->supports_postcode_code;
+		}
+
+		$column = $this->wpdb->get_var(
+			$this->wpdb->prepare(
+				'SHOW COLUMNS FROM ' . $this->table_name . ' LIKE %s',
+				'postcode_code'
+			)
+		);
+
+		$this->supports_postcode_code = ! empty( $column );
+
+		return (bool) $this->supports_postcode_code;
+	}
+
+	/**
+	 * Check whether the shipping rules table has the rule_title column.
+	 *
+	 * @return bool
+	 */
+	protected function supports_rule_title() {
+		if ( null !== $this->supports_rule_title ) {
+			return (bool) $this->supports_rule_title;
+		}
+
+		$column = $this->wpdb->get_var(
+			$this->wpdb->prepare(
+				'SHOW COLUMNS FROM ' . $this->table_name . ' LIKE %s',
+				'rule_title'
+			)
+		);
+
+		$this->supports_rule_title = ! empty( $column );
+
+		return (bool) $this->supports_rule_title;
 	}
 
 	/**
@@ -149,6 +228,45 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		$results = $this->wpdb->get_results( $query, ARRAY_A );
 
 		return is_array( $results ) ? $results : array();
+	}
+
+	/**
+	 * Normalize a postcode code.
+	 *
+	 * @param string $postcode Postcode input.
+	 * @return string
+	 */
+	protected function sanitize_postcode_code( $postcode ) {
+		$code = preg_replace( '/[^0-9]/', '', (string) $postcode );
+
+		return substr( (string) $code, 0, 5 );
+	}
+
+	/**
+	 * Resolve the postcode code for a rule.
+	 *
+	 * @param array<string, mixed> $rule Rule row.
+	 * @return string
+	 */
+	protected function get_rule_postcode_code( array $rule ) {
+		$code = isset( $rule['postcode_code'] ) ? $this->sanitize_postcode_code( (string) $rule['postcode_code'] ) : '';
+		if ( '' !== $code ) {
+			return $code;
+		}
+
+		$pc_id = absint( $rule['postcode_id'] ?? 0 );
+		if ( $pc_id <= 0 ) {
+			return '';
+		}
+
+		$postcode = (string) $this->wpdb->get_var(
+			$this->wpdb->prepare(
+				"SELECT postcode FROM {$this->wpdb->prefix}admbike_locations_postcodes WHERE id = %d",
+				$pc_id
+			)
+		);
+
+		return $this->sanitize_postcode_code( $postcode );
 	}
 
 	/**
@@ -190,8 +308,10 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		$values = array();
 
 		if ( '' !== $term ) {
-			$where_parts[] = '(notes LIKE %s OR postcode_from LIKE %s OR postcode_to LIKE %s)';
+			$where_parts[] = '(rule_title LIKE %s OR display_title LIKE %s OR notes LIKE %s OR postcode_from LIKE %s OR postcode_to LIKE %s)';
 			$like = '%' . $this->wpdb->esc_like( $term ) . '%';
+			$values[] = $like;
+			$values[] = $like;
 			$values[] = $like;
 			$values[] = $like;
 			$values[] = $like;
@@ -247,8 +367,10 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		$values = array();
 
 		if ( '' !== $term ) {
-			$where_parts[] = '(notes LIKE %s OR postcode_from LIKE %s OR postcode_to LIKE %s)';
+			$where_parts[] = '(rule_title LIKE %s OR display_title LIKE %s OR notes LIKE %s OR postcode_from LIKE %s OR postcode_to LIKE %s)';
 			$like = '%' . $this->wpdb->esc_like( $term ) . '%';
+			$values[] = $like;
+			$values[] = $like;
 			$values[] = $like;
 			$values[] = $like;
 			$values[] = $like;
@@ -317,14 +439,14 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 			$conflicts = $this->wpdb->get_results( $sql, ARRAY_A );
 
 		} elseif ( self::MATCH_POSTCODE === $match_type ) {
-			$pc_id = absint( $rule['postcode_id'] ?? 0 );
-			if ( $pc_id <= 0 ) {
+			$postcode = $this->get_rule_postcode_code( $rule );
+			if ( '' === $postcode ) {
 				return array();
 			}
 			$sql = $this->wpdb->prepare(
-				"SELECT * FROM {$this->table_name} WHERE match_type = 'postcode_range' AND postcode_from <= (SELECT postcode FROM {$this->table_name} WHERE id = %d) AND postcode_to >= (SELECT postcode FROM {$this->table_name} WHERE id = %d) AND is_active = 1",
-				$pc_id,
-				$pc_id
+				"SELECT * FROM {$this->table_name} WHERE match_type = 'postcode_range' AND postcode_from <= %s AND postcode_to >= %s AND is_active = 1",
+				$postcode,
+				$postcode
 			);
 			$conflicts = $this->wpdb->get_results( $sql, ARRAY_A );
 
@@ -379,8 +501,9 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		if ( $postcode !== '' ) {
 			$postcode_rows = $this->wpdb->get_results(
 				$this->wpdb->prepare(
-					"SELECT * FROM {$this->table_name} WHERE is_active = 1 AND match_type = %s AND postcode_id IN (SELECT id FROM {$this->wpdb->prefix}admbike_locations_postcodes WHERE postcode = %s)",
+					"SELECT * FROM {$this->table_name} WHERE is_active = 1 AND match_type = %s AND (postcode_code = %s OR postcode_id IN (SELECT id FROM {$this->wpdb->prefix}admbike_locations_postcodes WHERE postcode = %s))",
 					self::MATCH_POSTCODE,
+					$postcode,
 					$postcode
 				),
 				ARRAY_A
@@ -447,15 +570,7 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 			}
 
 			if ( self::MATCH_POSTCODE === $rule['match_type'] ) {
-				$rule_postcode = '';
-				if ( ! empty( $rule['postcode_id'] ) ) {
-					$rule_postcode = (string) $this->wpdb->get_var(
-						$this->wpdb->prepare(
-							"SELECT postcode FROM {$this->wpdb->prefix}admbike_locations_postcodes WHERE id = %d",
-							absint( $rule['postcode_id'] )
-						)
-					);
-				}
+				$rule_postcode = $this->get_rule_postcode_code( $rule );
 
 				if ( '' === $rule_postcode || $rule_postcode !== $postcode ) {
 					continue;

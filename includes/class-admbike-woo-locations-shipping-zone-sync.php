@@ -254,8 +254,8 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 			}
 
 			$locations = array_merge( $locations, $municipality_locations );
-		} elseif ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type && ! empty( $rule['postcode_id'] ) ) {
-			$postcode = $this->get_postcode_value( absint( $rule['postcode_id'] ) );
+		} elseif ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type ) {
+			$postcode = $this->get_rule_postcode_code( $rule );
 			if ( '' === $postcode ) {
 				return new WP_Error( 'admbike_postcode_missing', __( 'The selected postcode could not be resolved.', 'admbike-woo-locations' ) );
 			}
@@ -314,8 +314,8 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 			if ( $municipality && ! empty( $municipality['name'] ) ) {
 				$zone_bits[] = sanitize_text_field( (string) $municipality['name'] );
 			}
-		} elseif ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type && ! empty( $rule['postcode_id'] ) ) {
-			$zone_bits[] = $this->get_postcode_value( absint( $rule['postcode_id'] ) );
+		} elseif ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type ) {
+			$zone_bits[] = $this->get_rule_postcode_code( $rule );
 		} elseif ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE_RANGE === $match_type ) {
 			$zone_bits[] = $this->sanitize_postcode( (string) ( $rule['postcode_from'] ?? '' ) ) . '-' . $this->sanitize_postcode( (string) ( $rule['postcode_to'] ?? '' ) );
 		}
@@ -562,6 +562,25 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		}
 
 		return $this->sanitize_postcode( (string) $postcode['postcode'] );
+	}
+
+	/**
+	 * Resolve a rule exact postcode code.
+	 *
+	 * @param array<string, mixed> $rule Rule row.
+	 * @return string
+	 */
+	protected function get_rule_postcode_code( array $rule ) {
+		$code = isset( $rule['postcode_code'] ) ? $this->sanitize_postcode( (string) $rule['postcode_code'] ) : '';
+		if ( '' !== $code ) {
+			return $code;
+		}
+
+		if ( empty( $rule['postcode_id'] ) ) {
+			return '';
+		}
+
+		return $this->get_postcode_value( absint( $rule['postcode_id'] ) );
 	}
 
 	/**
