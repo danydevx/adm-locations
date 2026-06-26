@@ -27,6 +27,7 @@ class ADMBike_Woo_Locations_Checkout {
 		add_action( 'woocommerce_after_checkout_validation', array( $this, 'validate_checkout_coverage' ), 10, 2 );
 		add_action( 'woocommerce_store_api_cart_errors', array( $this, 'validate_store_api_shipping_coverage' ), 10, 2 );
 		add_action( 'woocommerce_checkout_posted_data', array( $this, 'save_checkout_posted_data' ) );
+		add_filter( 'woocommerce_checkout_posted_data', array( $this, 'clear_postcode_when_municipality_empty' ), 20 );
 		add_action( 'woocommerce_checkout_order_processed', array( $this, 'save_order_location_meta' ), 10, 3 );
 		add_action( 'woocommerce_store_api_cart_update_customer_from_request', array( $this, 'save_store_api_shipping_location_from_request' ), 5, 2 );
 		add_action( 'woocommerce_store_api_checkout_update_customer_from_request', array( $this, 'save_store_api_shipping_location_from_request' ), 5, 2 );
@@ -55,7 +56,13 @@ class ADMBike_Woo_Locations_Checkout {
 		}
 
 		if ( isset( WC()->session ) && WC()->session ) {
+			$previous_location = (array) WC()->session->get( self::SESSION_KEY, array() );
+
 			WC()->session->set( self::SESSION_KEY, $location );
+
+			if ( $previous_location !== $location ) {
+				$this->invalidate_shipping_session_cache();
+			}
 		}
 
 		if ( class_exists( 'ADMBike_Woo_Locations_Logger' ) ) {
@@ -190,16 +197,68 @@ class ADMBike_Woo_Locations_Checkout {
 	 */
 	public function save_checkout_posted_data( $data ) {
 		if ( ! empty( $_POST['admbike_state_id'] ) && isset( WC()->session ) && WC()->session ) {
-			WC()->session->set( self::SESSION_KEY, array(
+			$location = array(
 				'state_id'        => absint( $_POST['admbike_state_id'] ),
 				'municipality_id' => ! empty( $_POST['admbike_municipality_id'] ) ? absint( $_POST['admbike_municipality_id'] ) : 0,
 				'postcode'        => isset( $_POST['admbike_postcode_select'] ) ? sanitize_text_field( (string) $_POST['admbike_postcode_select'] ) : '',
 				'postcode_raw'    => isset( $_POST['admbike_postcode_select'] ) ? sanitize_text_field( (string) $_POST['admbike_postcode_select'] ) : '',
 				'city'            => isset( $_POST['billing_city'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['billing_city'] ) ) : ( isset( $_POST['shipping_city'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['shipping_city'] ) ) : '' ),
-			) );
+			);
+
+			$previous_location = (array) WC()->session->get( self::SESSION_KEY, array() );
+			WC()->session->set( self::SESSION_KEY, $location );
+
+			if ( $previous_location !== $location ) {
+				$this->invalidate_shipping_session_cache();
+			}
 		}
 
 		return $data;
+	}
+
+	protected function invalidate_shipping_session_cache() {
+		if ( ! isset( WC()->session ) || ! WC()->session ) {
+			return;
+		}
+
+		WC()->session->set( 'chosen_shipping_methods', array() );
+
+		for ( $i = 0; $i < 10; $i++ ) {
+			$key = 'shipping_for_package_' . $i;
+			if ( method_exists( WC()->session, '__unset' ) ) {
+				WC()->session->__unset( $key );
+			} else {
+				WC()->session->set( $key, null );
+			}
+		}
+	}
+
+	/**
+	 * Clear billing/shipping postcode when municipality is empty.
+	 *
+	 * When the municipality select is at its placeholder (empty value),
+	 * the postcode from a previous selection must not be used by
+	 * WooCommerce for shipping calculation. This prevents free/paid
+	 * shipping rules from being incorrectly matched based on a stale
+	 * postcode that belongs to a different municipality.
+	 *
+	 * @param array<string, mixed> $post_data Posted checkout data.
+	 * @return array<string, mixed>
+	 */
+	public function clear_postcode_when_municipality_empty( $post_data ) {
+		if ( ! is_array( $post_data ) ) {
+			return $post_data;
+		}
+
+		$municipality_id = ! empty( $post_data['municipality_id'] ) ? absint( $post_data['municipality_id'] ) : 0;
+		$city            = isset( $post_data['city'] ) ? sanitize_text_field( (string) $post_data['city'] ) : '';
+
+		if ( $municipality_id <= 0 && empty( $city ) ) {
+			$post_data['billing_postcode'] = '';
+			$post_data['shipping_postcode'] = '';
+		}
+
+		return $post_data;
 	}
 
 	/**
@@ -489,6 +548,27 @@ class ADMBike_Woo_Locations_Checkout {
 						$state_id = absint( $municipality['state_id'] );
 					}
 				}
+			}
+		}
+
+		if ( 0 === $municipality_id && '' === $postcode ) {
+			return array();
+		}
+
+		if ( '' !== $postcode && $state_id > 0 ) {
+			$postcode_repo  = new ADMBike_Woo_Locations_Postcode_Repository();
+			$postcode_rows = $postcode_repo->get_by_postcode( $postcode );
+			if ( ! empty( $postcode_rows ) ) {
+				$first_match     = $postcode_rows[0];
+				$postcode_state  = ! empty( $first_match['state_id'] ) ? absint( $first_match['state_id'] ) : 0;
+				$postcode_muni  = ! empty( $first_match['municipality_id'] ) ? absint( $first_match['municipality_id'] ) : 0;
+				$state_match    = $postcode_state > 0 && $postcode_state === $state_id;
+				$muni_match     = $municipality_id > 0 && $postcode_muni > 0 && $postcode_muni === $municipality_id;
+				if ( ! ( $state_match && $muni_match ) && ! ( $state_match && 0 === $municipality_id && $postcode_muni > 0 ) ) {
+					$postcode = '';
+				}
+			} else {
+				$postcode = '';
 			}
 		}
 

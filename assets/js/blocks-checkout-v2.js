@@ -8,6 +8,8 @@
 	var states = Array.isArray(settings.states) ? settings.states : [];
 	var municipalities = Array.isArray(settings.municipalities) ? settings.municipalities : [];
 	var formTimers = new WeakMap();
+	var postcodeGuards = new WeakMap();
+	var shippingRefreshTimers = new WeakMap();
 
 	function normalizeCode(value) {
 		return String(value || '').trim().toUpperCase();
@@ -113,6 +115,134 @@
 
 	function getPostcodeInput(form) {
 		return form ? form.querySelector('.wc-block-components-address-form__postcode input') : null;
+	}
+
+	function syncCheckoutPostcode(postcode) {
+		if (window.wp && window.wp.data && window.wp.data.dispatch) {
+			var checkoutDispatch = window.wp.data.dispatch('wc/store/checkout');
+			if (checkoutDispatch && typeof checkoutDispatch.setShippingAddress === 'function') {
+				checkoutDispatch.setShippingAddress({ postcode: postcode });
+			}
+		}
+	}
+
+	function syncCheckoutAddress(form, overrides) {
+		if (!(window.wp && window.wp.data && window.wp.data.dispatch)) {
+			return;
+		}
+
+		var checkoutDispatch = window.wp.data.dispatch('wc/store/checkout');
+		if (!(checkoutDispatch && typeof checkoutDispatch.setShippingAddress === 'function')) {
+			return;
+		}
+
+		var address = getFormAddress(form);
+		var payload = {
+			country: address.country,
+			state: address.state,
+			city: address.city,
+			postcode: address.postcode
+		};
+
+		if (overrides && typeof overrides === 'object') {
+			payload = Object.assign(payload, overrides);
+		}
+
+		checkoutDispatch.setShippingAddress(payload);
+	}
+
+	function requestShippingRefresh(form, overrides) {
+		syncCheckoutAddress(form, overrides);
+
+		if (shippingRefreshTimers.has(form)) {
+			window.clearTimeout(shippingRefreshTimers.get(form));
+		}
+
+		shippingRefreshTimers.set(
+			form,
+			window.setTimeout(function () {
+				syncCheckoutAddress(form, overrides);
+			}, 250)
+		);
+	}
+
+	function clearPostcodeValue(form) {
+		var postcodeInput = getPostcodeInput(form);
+		if (!postcodeInput) {
+			return;
+		}
+
+		if (postcodeInput.value !== '') {
+			postcodeInput.value = '';
+			postcodeInput.dispatchEvent(new Event('input', { bubbles: true }));
+			postcodeInput.dispatchEvent(new Event('change', { bubbles: true }));
+		}
+
+		requestShippingRefresh(form, { postcode: '' });
+	}
+
+	function hardenPostcodeInput(postcodeInput, locked) {
+		if (!postcodeInput) {
+			return;
+		}
+
+		postcodeInput.setAttribute('autocorrect', 'off');
+		postcodeInput.setAttribute('autocapitalize', 'none');
+		postcodeInput.setAttribute('spellcheck', 'false');
+		postcodeInput.setAttribute('data-lpignore', 'true');
+		postcodeInput.setAttribute('data-1p-ignore', 'true');
+		postcodeInput.setAttribute('aria-autocomplete', 'none');
+		postcodeInput.setAttribute('inputmode', 'numeric');
+
+		if (locked) {
+			postcodeInput.setAttribute('autocomplete', 'new-password');
+			return;
+		}
+
+		postcodeInput.setAttribute('autocomplete', 'one-time-code');
+	}
+
+	function setPostcodeLocked(form, locked) {
+		var postcodeInput = getPostcodeInput(form);
+		if (!postcodeInput) {
+			return;
+		}
+
+		hardenPostcodeInput(postcodeInput, locked);
+		if (locked) {
+			postcodeInput.setAttribute('readonly', 'readonly');
+			clearPostcodeValue(form);
+
+			if (!postcodeGuards.has(form)) {
+				postcodeGuards.set(
+					form,
+					window.setInterval(function () {
+						var guardedInput = getPostcodeInput(form);
+						if (!guardedInput || guardedInput.value === '') {
+							return;
+						}
+
+						clearPostcodeValue(form);
+					}, 120)
+				);
+			}
+		} else {
+			if (document.activeElement === postcodeInput) {
+				window.setTimeout(function () {
+					var currentInput = getPostcodeInput(form);
+					if (currentInput && document.activeElement === currentInput) {
+						currentInput.removeAttribute('readonly');
+					}
+				}, 80);
+			} else {
+				postcodeInput.removeAttribute('readonly');
+			}
+
+			if (postcodeGuards.has(form)) {
+				window.clearInterval(postcodeGuards.get(form));
+				postcodeGuards.delete(form);
+			}
+		}
 	}
 
 	function ensureCitySelect(form) {
@@ -225,6 +355,57 @@
 		return select.options[select.selectedIndex].value || '';
 	}
 
+	function getSelectedMunicipalityId(form) {
+		var stateSelect = getStateSelect(form);
+		var state = resolveStateFromSelect(stateSelect);
+		var citySelect = getCitySelect(form);
+		var cityName = getSelectedMunicipalityName(citySelect);
+
+		if (!state || !cityName) {
+			return 0;
+		}
+
+		for (var i = 0; i < municipalities.length; i += 1) {
+			if (parseInt(municipalities[i].state_id, 10) === parseInt(state.id, 10) && String(municipalities[i].name || '') === cityName) {
+				return parseInt(municipalities[i].id, 10) || 0;
+			}
+		}
+
+		return 0;
+	}
+
+	function persistCheckoutLocation(form, overrides) {
+		var address = getFormAddress(form);
+		var payload = {
+			country: address.country,
+			state: address.state,
+			city: address.city,
+			municipality_id: getSelectedMunicipalityId(form),
+			postcode: address.postcode
+		};
+
+		if (overrides && typeof overrides === 'object') {
+			payload = Object.assign(payload, overrides);
+		}
+
+		return window.fetch(restUrl + 'checkout-location', {
+			credentials: 'same-origin',
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Accept: 'application/json'
+			},
+			body: JSON.stringify(payload)
+		}).catch(function () {
+			return null;
+		});
+	}
+
+	function hasSelectedMunicipality(form) {
+		var citySelect = getCitySelect(form);
+		return !!getSelectedMunicipalityName(citySelect);
+	}
+
 	function populateMunicipalitySelect(form) {
 		var stateSelect = getStateSelect(form);
 		var citySelect = ensureCitySelect(form);
@@ -265,6 +446,7 @@
 
 		if (!list.length) {
 			syncHiddenCityInput(form, '');
+			setPostcodeLocked(form, true);
 			return;
 		}
 
@@ -278,6 +460,12 @@
 		}
 
 		syncHiddenCityInput(form, citySelect.value || '');
+
+		if (placeholder.selected) {
+			setPostcodeLocked(form, true);
+		} else {
+			setPostcodeLocked(form, false);
+		}
 	}
 
 	function getFormAddress(form) {
@@ -374,7 +562,6 @@
 			if (skipPostcode) {
 				address.postcode = '';
 			}
-			console.log('[admbike] coverage skipPostcode=' + !!skipPostcode + ' address:', JSON.stringify(address));
 			if (!address.country && !address.state && !address.city && !address.postcode) {
 				updateNotice('');
 				return;
@@ -416,65 +603,57 @@
 		form.dataset.admbikeBound = '1';
 
 		stateSelect.addEventListener('change', function () {
-			var postcodeInputs = form.querySelectorAll('input[name*="postcode"]');
-			for (var pi = 0; pi < postcodeInputs.length; pi++) {
-				postcodeInputs[pi].value = '';
-				postcodeInputs[pi].dispatchEvent(new Event('input', { bubbles: true }));
-				postcodeInputs[pi].dispatchEvent(new Event('change', { bubbles: true }));
-			}
+			setPostcodeLocked(form, true);
+			syncHiddenCityInput(form, '');
+			persistCheckoutLocation(form, { state: stateSelect.value || '', city: '', municipality_id: 0, postcode: '' });
+			requestShippingRefresh(form, { state: stateSelect.value || '', city: '', postcode: '' });
 			setTimeout(function () {
-				var postcodeInputsAfter = form.querySelectorAll('input[name*="postcode"]');
-				for (var pi2 = 0; pi2 < postcodeInputsAfter.length; pi2++) {
-					postcodeInputsAfter[pi2].value = '';
-					postcodeInputsAfter[pi2].dispatchEvent(new Event('input', { bubbles: true }));
-					postcodeInputsAfter[pi2].dispatchEvent(new Event('change', { bubbles: true }));
-				}
-				if (window.wp && window.wp.data && window.wp.data.dispatch) {
-					var checkoutDispatch = window.wp.data.dispatch('wc/store/checkout');
-					if (checkoutDispatch && typeof checkoutDispatch.setShippingAddress === 'function') {
-						checkoutDispatch.setShippingAddress({ postcode: '' });
-					}
-				}
+				clearPostcodeValue(form);
 			}, 150);
 			populateMunicipalitySelect(form);
 			scheduleCoverage(form, true);
 		});
 
 		citySelect.addEventListener('change', function () {
-			syncHiddenCityInput(form, getSelectedMunicipalityName(citySelect));
+			var selectedValue = getSelectedMunicipalityName(citySelect);
+			syncHiddenCityInput(form, selectedValue);
+			clearPostcodeValue(form);
+			setPostcodeLocked(form, true);
+			persistCheckoutLocation(form, { city: selectedValue, municipality_id: getSelectedMunicipalityId(form), postcode: '' });
+			requestShippingRefresh(form, { city: selectedValue, postcode: '' });
 			scheduleCoverage(form, true);
-			if (window.wp && window.wp.data && window.wp.data.dispatch) {
-				var checkoutDispatch = window.wp.data.dispatch('wc/store/checkout');
-				if (checkoutDispatch && typeof checkoutDispatch.setShippingAddress === 'function') {
-					checkoutDispatch.setShippingAddress({ postcode: '' });
-				}
-			}
 		});
 
 		if (postcodeInput) {
+			postcodeInput.addEventListener('focus', function () {
+				if (hasSelectedMunicipality(form)) {
+					setPostcodeLocked(form, false);
+					if (postcodeInput.value !== '') {
+						clearPostcodeValue(form);
+					}
+				}
+			});
+			postcodeInput.addEventListener('blur', function () {
+				hardenPostcodeInput(postcodeInput, !hasSelectedMunicipality(form));
+			});
 			postcodeInput.addEventListener('input', function () {
+				persistCheckoutLocation(form, { postcode: String(postcodeInput.value || '').trim() });
 				scheduleCoverage(form);
 			});
 			postcodeInput.addEventListener('change', function () {
+				persistCheckoutLocation(form, { postcode: String(postcodeInput.value || '').trim() });
 				scheduleCoverage(form);
 			});
 		}
 
 		if (countrySelect) {
 			countrySelect.addEventListener('change', function () {
-				var postcodeInputs = form.querySelectorAll('input[name*="postcode"]');
-				for (var pi = 0; pi < postcodeInputs.length; pi++) {
-					postcodeInputs[pi].value = '';
-					postcodeInputs[pi].dispatchEvent(new Event('input', { bubbles: true }));
-					postcodeInputs[pi].dispatchEvent(new Event('change', { bubbles: true }));
-				}
+				setPostcodeLocked(form, true);
+				syncHiddenCityInput(form, '');
+				persistCheckoutLocation(form, { country: countrySelect.value || '', state: '', city: '', municipality_id: 0, postcode: '' });
+				requestShippingRefresh(form, { country: countrySelect.value || '', state: '', city: '', postcode: '' });
 				setTimeout(function () {
-					if (window.wp && window.wp.data && window.wp.data.dispatch) {
-						var checkoutDispatch = window.wp.data.dispatch('wc/store/checkout');
-						if (checkoutDispatch && typeof checkoutDispatch.setShippingAddress === 'function') {
-							checkoutDispatch.setShippingAddress({ postcode: '' });
-						}
-					}
+					clearPostcodeValue(form);
 				}, 150);
 				populateMunicipalitySelect(form);
 				scheduleCoverage(form, true);

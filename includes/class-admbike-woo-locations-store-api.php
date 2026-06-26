@@ -28,12 +28,43 @@ class ADMBike_Woo_Locations_Store_API {
 		$shipping_address = isset( $request['shipping_address'] ) && is_array( $request['shipping_address'] ) ? $request['shipping_address'] : array();
 		$location         = $this->resolve_location_from_shipping_address( $shipping_address );
 
+		ADMBike_Woo_Locations_Logger::warning(
+			'Store API shipping address resolved',
+			array(
+				'shipping_address' => $shipping_address,
+				'location'         => $location,
+			)
+		);
+
 		if ( empty( $location['state_id'] ) && empty( $location['municipality_id'] ) && empty( $location['postcode'] ) ) {
 			return;
 		}
 
 		if ( isset( WC()->session ) && WC()->session ) {
+			$previous_location = (array) WC()->session->get( self::SESSION_KEY, array() );
+
 			WC()->session->set( self::SESSION_KEY, $location );
+
+			if ( $previous_location !== $location ) {
+				$this->invalidate_shipping_session_cache();
+			}
+		}
+	}
+
+	protected function invalidate_shipping_session_cache() {
+		if ( ! isset( WC()->session ) || ! WC()->session ) {
+			return;
+		}
+
+		WC()->session->set( 'chosen_shipping_methods', array() );
+
+		for ( $i = 0; $i < 10; $i++ ) {
+			$key = 'shipping_for_package_' . $i;
+			if ( method_exists( WC()->session, '__unset' ) ) {
+				WC()->session->__unset( $key );
+			} else {
+				WC()->session->set( $key, null );
+			}
 		}
 	}
 
@@ -121,14 +152,6 @@ class ADMBike_Woo_Locations_Store_API {
 		}
 
 		$municipality_id = 0;
-		if ( '' !== $postcode ) {
-			$pc_rows = $pc_repo->get_by_postcode( $postcode );
-			if ( ! empty( $pc_rows ) ) {
-				$municipality_id = ! empty( $pc_rows[0]['municipality_id'] ) ? absint( $pc_rows[0]['municipality_id'] ) : 0;
-				$state_id        = ! empty( $pc_rows[0]['state_id'] ) ? absint( $pc_rows[0]['state_id'] ) : $state_id;
-			}
-		}
-
 		if ( $municipality_id <= 0 && '' !== $city_value ) {
 			if ( $state_id > 0 ) {
 				$municipality = $muni_repo->get_by_state_and_name( $state_id, $city_value );
@@ -145,6 +168,28 @@ class ADMBike_Woo_Locations_Store_API {
 						$state_id = absint( $municipality['state_id'] );
 					}
 				}
+			}
+		}
+
+		if ( '' !== $postcode ) {
+			$pc_rows = $pc_repo->get_by_postcode( $postcode );
+			if ( ! empty( $pc_rows ) ) {
+				$postcode_state = ! empty( $pc_rows[0]['state_id'] ) ? absint( $pc_rows[0]['state_id'] ) : 0;
+				$postcode_muni  = ! empty( $pc_rows[0]['municipality_id'] ) ? absint( $pc_rows[0]['municipality_id'] ) : 0;
+				$state_match    = $state_id > 0 && $postcode_state > 0 && $state_id === $postcode_state;
+				$muni_match     = $municipality_id > 0 && $postcode_muni > 0 && $municipality_id === $postcode_muni;
+
+				if ( $state_match && $muni_match ) {
+					$state_id        = $postcode_state;
+					$municipality_id = $postcode_muni;
+				} elseif ( $state_match && 0 === $municipality_id && $postcode_muni > 0 ) {
+					$state_id        = $postcode_state;
+					$municipality_id = $postcode_muni;
+				} else {
+					$postcode = '';
+				}
+			} else {
+				$postcode = '';
 			}
 		}
 
@@ -184,6 +229,23 @@ class ADMBike_Woo_Locations_Store_API {
 			$postcode = sanitize_text_field( (string) $data['postcode'] );
 		} elseif ( ! empty( $session_location['postcode'] ) ) {
 			$postcode = sanitize_text_field( (string) $session_location['postcode'] );
+		}
+
+		if ( '' !== $postcode && $state_id > 0 ) {
+			$postcode_repo  = new ADMBike_Woo_Locations_Postcode_Repository();
+			$postcode_rows = $postcode_repo->get_by_postcode( $postcode );
+			if ( ! empty( $postcode_rows ) ) {
+				$first_match     = $postcode_rows[0];
+				$postcode_state = ! empty( $first_match['state_id'] ) ? absint( $first_match['state_id'] ) : 0;
+				$postcode_muni  = ! empty( $first_match['municipality_id'] ) ? absint( $first_match['municipality_id'] ) : 0;
+				$state_match    = $postcode_state > 0 && $postcode_state === $state_id;
+				$muni_match     = $municipality_id > 0 && $postcode_muni > 0 && $postcode_muni === $municipality_id;
+				if ( ! ( $state_match && $muni_match ) && ! ( $state_match && 0 === $municipality_id && $postcode_muni > 0 ) ) {
+					$postcode = '';
+				}
+			} else {
+				$postcode = '';
+			}
 		}
 
 		$city = '';
@@ -237,6 +299,27 @@ class ADMBike_Woo_Locations_Store_API {
 						$state_id = absint( $municipality['state_id'] );
 					}
 				}
+			}
+		}
+
+		if ( 0 === $municipality_id && '' === $postcode ) {
+			return array();
+		}
+
+		if ( '' !== $postcode && $state_id > 0 ) {
+			$postcode_repo  = new ADMBike_Woo_Locations_Postcode_Repository();
+			$postcode_rows = $postcode_repo->get_by_postcode( $postcode );
+			if ( ! empty( $postcode_rows ) ) {
+				$first_match     = $postcode_rows[0];
+				$postcode_state  = ! empty( $first_match['state_id'] ) ? absint( $first_match['state_id'] ) : 0;
+				$postcode_muni  = ! empty( $first_match['municipality_id'] ) ? absint( $first_match['municipality_id'] ) : 0;
+				$state_match    = $postcode_state > 0 && $postcode_state === $state_id;
+				$muni_match     = $municipality_id > 0 && $postcode_muni > 0 && $postcode_muni === $municipality_id;
+				if ( ! ( $state_match && $muni_match ) && ! ( $state_match && 0 === $municipality_id && $postcode_muni > 0 ) ) {
+					$postcode = '';
+				}
+			} else {
+				$postcode = '';
 			}
 		}
 

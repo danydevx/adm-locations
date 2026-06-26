@@ -140,9 +140,9 @@ class ADMBike_Woo_Locations_Shipping {
 			}
 
 			$packages[ $index ]['destination']['country']  = 'MX';
-			$packages[ $index ]['destination']['state']    = isset( $state['code'] ) ? (string) $state['code'] : ( $packages[ $index ]['destination']['state'] ?? '' );
-			$packages[ $index ]['destination']['city']     = isset( $municipality['name'] ) ? (string) $municipality['name'] : ( $packages[ $index ]['destination']['city'] ?? '' );
-			$packages[ $index ]['destination']['postcode'] = ! empty( $location['postcode'] ) ? (string) $location['postcode'] : ( $packages[ $index ]['destination']['postcode'] ?? '' );
+			$packages[ $index ]['destination']['state']    = isset( $state['code'] ) ? (string) $state['code'] : '';
+			$packages[ $index ]['destination']['city']     = isset( $municipality['name'] ) ? (string) $municipality['name'] : '';
+			$packages[ $index ]['destination']['postcode'] = ! empty( $location['postcode'] ) ? (string) $location['postcode'] : '';
 		}
 
 		return $packages;
@@ -222,7 +222,15 @@ class ADMBike_Woo_Locations_Shipping {
 		$state_id  = isset( $location['state_id'] ) ? absint( $location['state_id'] ) : 0;
 		$municipality_id = isset( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0;
 
-		if ( '' === $postcode && $state_id <= 0 && $municipality_id <= 0 ) {
+		ADMBike_Woo_Locations_Logger::warning(
+			'Direct rate location resolved',
+			array(
+				'location'    => $location,
+				'destination' => isset( $package['destination'] ) && is_array( $package['destination'] ) ? $package['destination'] : array(),
+			)
+		);
+
+		if ( '' === $postcode && $municipality_id <= 0 ) {
 			return null;
 		}
 
@@ -232,6 +240,14 @@ class ADMBike_Woo_Locations_Shipping {
 		}
 
 		$applied_rule = $rules[0];
+
+		ADMBike_Woo_Locations_Logger::warning(
+			'Direct rate applied rule',
+			array(
+				'rule' => $applied_rule,
+			)
+		);
+
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::RULE_UNAVAILABLE === $applied_rule['rule_type'] ) {
 			return null;
 		}
@@ -288,10 +304,6 @@ class ADMBike_Woo_Locations_Shipping {
 	 */
 	protected function get_checkout_location( $package ) {
 		$location = $this->get_session_location();
-
-		if ( '' !== $location['postcode'] || $location['state_id'] > 0 || $location['municipality_id'] > 0 ) {
-			return $location;
-		}
 
 		$destination = isset( $package['destination'] ) && is_array( $package['destination'] ) ? $package['destination'] : array();
 		$postcode    = isset( $destination['postcode'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $destination['postcode'] ) : '';

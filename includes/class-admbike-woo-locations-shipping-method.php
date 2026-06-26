@@ -171,8 +171,8 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 	 * Calculate shipping.
 	 *
 	 * Priority evaluation:
-	 * 1. Exact postcode match (highest specificity)
-	 * 2. Postcode range match
+	 * 1. Exact postcode match (highest specificity) — only if postcode belongs to selected state+municipality
+	 * 2. Postcode range match — only if postcode belongs to selected state+municipality
 	 * 3. Municipality match
 	 * 4. State match
 	 *
@@ -187,29 +187,71 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 			)
 		);
 
-		$postcode = $this->get_postcode_from_package( $package );
+		$session_location = array();
+		if ( isset( WC()->session ) && WC()->session->has_session() ) {
+			$session_location = (array) WC()->session->get( 'admbike_checkout_location', array() );
+		}
 
-		if ( empty( $postcode ) ) {
-			ADMBike_Woo_Locations_Logger::info( 'Shipping calculation: no postcode found in package' );
+		$state_id        = ! empty( $session_location['state_id'] ) ? absint( $session_location['state_id'] ) : 0;
+		$municipality_id = ! empty( $session_location['municipality_id'] ) ? absint( $session_location['municipality_id'] ) : 0;
+		$postcode        = $this->get_postcode_from_package( $package );
+		$destination     = isset( $package['destination'] ) && is_array( $package['destination'] ) ? $package['destination'] : array();
+		$city            = isset( $destination['city'] ) ? sanitize_text_field( (string) $destination['city'] ) : '';
+
+		if ( $municipality_id <= 0 && '' !== $city ) {
+			if ( $state_id > 0 ) {
+				$municipality = admbike_woo_locations()->municipalities()->get_by_state_and_name( $state_id, $city );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+				}
+			}
+
+			if ( $municipality_id <= 0 ) {
+				$municipality = admbike_woo_locations()->municipalities()->get_by_name( $city );
+				if ( $municipality && ! empty( $municipality['id'] ) ) {
+					$municipality_id = absint( $municipality['id'] );
+					if ( $state_id <= 0 && ! empty( $municipality['state_id'] ) ) {
+						$state_id = absint( $municipality['state_id'] );
+					}
+				}
+			}
+		}
+
+		if ( '' !== $postcode && $state_id > 0 ) {
+			$postcode_rows = $this->postcodes_repo()->get_by_postcode( $postcode );
+			if ( ! empty( $postcode_rows ) ) {
+				$first_match    = $postcode_rows[0];
+				$postcode_state = ! empty( $first_match['state_id'] ) ? absint( $first_match['state_id'] ) : 0;
+				$postcode_muni  = ! empty( $first_match['municipality_id'] ) ? absint( $first_match['municipality_id'] ) : 0;
+				$state_match    = $postcode_state > 0 && $postcode_state === $state_id;
+				$muni_match     = $municipality_id > 0 && $postcode_muni > 0 && $postcode_muni === $municipality_id;
+				if ( ! ( $state_match && $muni_match ) && ! ( $state_match && 0 === $municipality_id && $postcode_muni > 0 ) ) {
+					$postcode = '';
+				} else {
+					if ( $state_id <= 0 ) {
+						$state_id = $postcode_state;
+					}
+					if ( $municipality_id <= 0 && $postcode_muni > 0 ) {
+						$municipality_id = $postcode_muni;
+					}
+				}
+			} else {
+				$postcode = '';
+			}
+		}
+
+		if ( '' === $postcode && $municipality_id <= 0 ) {
+			ADMBike_Woo_Locations_Logger::info( 'Shipping calculation: incomplete location, waiting for municipality or postcode' );
 			return;
 		}
 
-		$postcode_rows = $this->postcodes_repo()->get_by_postcode( $postcode );
-
-		if ( empty( $postcode_rows ) ) {
-			ADMBike_Woo_Locations_Logger::info(
-				'Shipping calculation: postcode {postcode} not found in locations database',
-				array( 'postcode' => $postcode )
-			);
+		if ( $state_id <= 0 ) {
+			ADMBike_Woo_Locations_Logger::info( 'Shipping calculation: no state_id available' );
 			return;
 		}
-
-		$first_pc_row     = $postcode_rows[0];
-		$state_id         = (int) $first_pc_row['state_id'];
-		$municipality_id   = (int) $first_pc_row['municipality_id'];
 
 		ADMBike_Woo_Locations_Logger::debug(
-			'Shipping calculation: postcode resolved',
+			'Shipping calculation: resolved',
 			array(
 				'postcode'        => $postcode,
 				'state_id'        => $state_id,
@@ -221,7 +263,7 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 
 		if ( empty( $rules ) ) {
 			ADMBike_Woo_Locations_Logger::info(
-				'Shipping calculation: no rules matched for postcode {postcode}',
+				'Shipping calculation: no rules matched',
 				array( 'postcode' => $postcode, 'state_id' => $state_id, 'municipality_id' => $municipality_id )
 			);
 			return;
@@ -231,8 +273,8 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::RULE_UNAVAILABLE === $applied_rule['rule_type'] ) {
 			ADMBike_Woo_Locations_Logger::info(
-				'Shipping calculation: postcode {postcode} is marked unavailable',
-				array( 'postcode' => $postcode, 'rule_id' => $applied_rule['id'] ?? 0 )
+				'Shipping calculation: location is marked unavailable',
+				array( 'rule_id' => $applied_rule['id'] ?? 0 )
 			);
 			return;
 		}

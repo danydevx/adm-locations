@@ -272,7 +272,12 @@ class ADMBike_Woo_Locations_REST_API {
 		);
 
 		if ( isset( WC()->session ) && WC()->session ) {
+			$previous_location = (array) WC()->session->get( ADMBike_Woo_Locations_Store_API::SESSION_KEY, array() );
 			WC()->session->set( ADMBike_Woo_Locations_Store_API::SESSION_KEY, $location );
+
+			if ( $previous_location !== $location ) {
+				$this->invalidate_shipping_session_cache();
+			}
 		}
 
 		$response = array(
@@ -292,6 +297,28 @@ class ADMBike_Woo_Locations_REST_API {
 		}
 
 		return new WP_REST_Response( $response, 200 );
+	}
+
+	/**
+	 * Clear cached shipping data after a checkout location change.
+	 *
+	 * @return void
+	 */
+	protected function invalidate_shipping_session_cache() {
+		if ( ! isset( WC()->session ) || ! WC()->session ) {
+			return;
+		}
+
+		WC()->session->set( 'chosen_shipping_methods', array() );
+
+		for ( $i = 0; $i < 10; $i++ ) {
+			$key = 'shipping_for_package_' . $i;
+			if ( method_exists( WC()->session, '__unset' ) ) {
+				WC()->session->__unset( $key );
+			} else {
+				WC()->session->set( $key, null );
+			}
+		}
 	}
 
 	/**
@@ -471,9 +498,20 @@ class ADMBike_Woo_Locations_REST_API {
 		if ( '' !== $postcode ) {
 			$postcode_rows = $this->postcodes_repo()->get_by_postcode( $postcode );
 			if ( ! empty( $postcode_rows ) ) {
-				$first_match = $postcode_rows[0];
-				$state_id        = ! empty( $first_match['state_id'] ) ? (int) $first_match['state_id'] : $state_id;
-				$municipality_id = ! empty( $first_match['municipality_id'] ) ? (int) $first_match['municipality_id'] : $municipality_id;
+				$first_match     = $postcode_rows[0];
+				$postcode_state   = ! empty( $first_match['state_id'] ) ? (int) $first_match['state_id'] : 0;
+				$postcode_muni   = ! empty( $first_match['municipality_id'] ) ? (int) $first_match['municipality_id'] : 0;
+				$state_match     = $state_id > 0 && $postcode_state > 0 && $state_id === $postcode_state;
+				$muni_match     = $municipality_id > 0 && $postcode_muni > 0 && $municipality_id === $postcode_muni;
+				if ( $state_match && $muni_match ) {
+					$state_id        = $postcode_state;
+					$municipality_id = $postcode_muni;
+				} elseif ( $state_match && 0 === $municipality_id && $postcode_muni > 0 ) {
+					$state_id        = $postcode_state;
+					$municipality_id = $postcode_muni;
+				} else {
+					$postcode = '';
+				}
 			} elseif ( 0 === $state_id && 0 === $municipality_id ) {
 				return new WP_REST_Response(
 					array(
@@ -527,6 +565,20 @@ class ADMBike_Woo_Locations_REST_API {
 					);
 				}
 			}
+		}
+
+		if ( 0 === $municipality_id && '' === $postcode ) {
+			return new WP_REST_Response(
+				array(
+					'available'       => null,
+					'rule_type'       => 'pending',
+					'message'         => '',
+					'postcode'        => $postcode,
+					'state_id'        => $state_id,
+					'municipality_id' => $municipality_id,
+				),
+				200
+			);
 		}
 
 		$rules = $this->shipping_rules_repo()->get_applicable_rules( $state_id, $municipality_id, $postcode );
