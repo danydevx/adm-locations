@@ -28,7 +28,7 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		$rule = $this->shipping_rules_repo()->get_by_id( $rule_id );
 
 		if ( ! $rule ) {
-			return new WP_Error( 'admbike_rule_not_found', __( 'Shipping rule not found.', 'admbike-woo-locations' ) );
+			return new WP_Error( 'orpot_woo_locations_rule_not_found', __( 'Shipping rule not found.', 'admbike-woo-locations' ) );
 		}
 
 		return $this->sync_rule( $rule );
@@ -42,12 +42,12 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 	 */
 	public function sync_rule( array $rule ) {
 		if ( ! class_exists( 'WC_Shipping_Zone' ) || ! class_exists( 'WC_Shipping_Zones' ) ) {
-			return new WP_Error( 'admbike_wc_missing', __( 'WooCommerce Shipping Zones are not available.', 'admbike-woo-locations' ) );
+			return new WP_Error( 'orpot_woo_locations_wc_missing', __( 'WooCommerce Shipping Zones are not available.', 'admbike-woo-locations' ) );
 		}
 
 		$rule_id = absint( $rule['id'] ?? 0 );
 		if ( $rule_id <= 0 ) {
-			return new WP_Error( 'admbike_invalid_rule', __( 'Invalid shipping rule.', 'admbike-woo-locations' ) );
+			return new WP_Error( 'orpot_woo_locations_invalid_rule', __( 'Invalid shipping rule.', 'admbike-woo-locations' ) );
 		}
 
 		if ( empty( $rule['is_active'] ) || ADMBike_Woo_Locations_Shipping_Rule_Repository::RULE_UNAVAILABLE === ( $rule['rule_type'] ?? '' ) ) {
@@ -70,7 +70,7 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 			);
 
 			return new WP_Error(
-				'admbike_postcode_conflict',
+				'orpot_woo_locations_postcode_conflict',
 				sprintf(
 					/* translators: %s: comma separated list of zone names. */
 					__( 'Conflicting postcode coverage already exists in WooCommerce zones: %s', 'admbike-woo-locations' ),
@@ -92,7 +92,7 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 
 		$instance_id = $this->sync_zone_method_instance( $zone, $payload['method_id'], $payload, $rule );
 		if ( ! $instance_id ) {
-			return new WP_Error( 'admbike_method_failed', __( 'Failed to add a WooCommerce shipping method to the zone.', 'admbike-woo-locations' ) );
+			return new WP_Error( 'orpot_woo_locations_method_failed', __( 'Failed to add a WooCommerce shipping method to the zone.', 'admbike-woo-locations' ) );
 		}
 
 		$this->enable_shipping_method_instance( (int) $instance_id );
@@ -266,7 +266,7 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		} elseif ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type ) {
 			$postcode = $this->get_rule_postcode_code( $rule );
 			if ( '' === $postcode ) {
-				return new WP_Error( 'admbike_postcode_missing', __( 'The selected postcode could not be resolved.', 'admbike-woo-locations' ) );
+				return new WP_Error( 'orpot_woo_locations_postcode_missing', __( 'The selected postcode could not be resolved.', 'admbike-woo-locations' ) );
 			}
 
 			$locations[] = array(
@@ -278,7 +278,7 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 			$to   = $this->sanitize_postcode( (string) ( $rule['postcode_to'] ?? '' ) );
 
 			if ( '' === $from || '' === $to ) {
-				return new WP_Error( 'admbike_range_missing', __( 'The selected postcode range is incomplete.', 'admbike-woo-locations' ) );
+				return new WP_Error( 'orpot_woo_locations_range_missing', __( 'The selected postcode range is incomplete.', 'admbike-woo-locations' ) );
 			}
 
 			$locations[] = array(
@@ -528,7 +528,7 @@ class ADMBike_Woo_Locations_Shipping_Zone_Sync {
 		$locations = $this->municipalities_repo()->get_coverage_locations( $municipality_id );
 
 		if ( empty( $locations ) ) {
-			return new WP_Error( 'admbike_municipality_postcodes_missing', __( 'The selected municipality does not have any postcode coverage to sync.', 'admbike-woo-locations' ) );
+			return new WP_Error( 'orpot_woo_locations_municipality_postcodes_missing', __( 'The selected municipality does not have any postcode coverage to sync.', 'admbike-woo-locations' ) );
 		}
 
 		return $locations;

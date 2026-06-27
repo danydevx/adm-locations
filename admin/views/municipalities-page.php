@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$admin = admbike_woo_locations_admin();
+$admin = orpot_woo_locations_admin();
 
 $states_repo = new ADMBike_Woo_Locations_State_Repository();
 $muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
@@ -22,7 +22,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 	if ( 'edit' === $action && $id > 0 ) {
 		$item = $muni_repo->get_by_id( $id );
 		if ( ! $item ) {
-			wp_die( esc_html__( 'Municipality not found.', 'admbike-woo-locations' ) );
+			wp_die( esc_html__( 'No se encontró el municipio.', 'admbike-woo-locations' ) );
 		}
 	}
 
@@ -30,20 +30,20 @@ if ( 'add' === $action || 'edit' === $action ) {
 	if ( empty( $states ) ) {
 		?>
 		<div class="wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Add Municipality', 'admbike-woo-locations' ); ?></h1>
+			<h1 class="wp-heading-inline"><?php esc_html_e( 'Agregar municipio', 'admbike-woo-locations' ); ?></h1>
 			<hr class="wp-header-end">
 			<div class="notice notice-warning">
-				<p><?php esc_html_e( 'You must add at least one active state before adding municipalities.', 'admbike-woo-locations' ); ?></p>
+				<p><?php esc_html_e( 'Debes agregar al menos un estado activo antes de agregar municipios.', 'admbike-woo-locations' ); ?></p>
 			</div>
-			<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Back to list', 'admbike-woo-locations' ); ?></a></p>
+			<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Volver al listado', 'admbike-woo-locations' ); ?></a></p>
 		</div>
 		<?php
 		return;
 	}
 
-	if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['admbike_muni_nonce'] ) ) {
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['admbike_muni_nonce'] ) ), 'admbike_save_municipality' ) || ! current_user_can( ADMBike_Woo_Locations_Admin::CAPABILITY ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['orpot_woo_locations_muni_nonce'] ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['orpot_woo_locations_muni_nonce'] ) ), 'orpot_woo_locations_save_municipality' ) || ! current_user_can( ADMBike_Woo_Locations_Admin::CAPABILITY ) ) {
+			wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 		}
 
 		$post = wp_unslash( $_POST );
@@ -58,26 +58,26 @@ if ( 'add' === $action || 'edit' === $action ) {
 		$active   = isset( $post['is_active'] ) ? (int) (bool) $post['is_active'] : 0;
 
 		if ( empty( $state_id ) || empty( $name ) ) {
-			$error_msg = __( 'State and Name are required.', 'admbike-woo-locations' );
+			$error_msg = __( 'Se requieren el estado y el nombre.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
 			return;
 		}
 
 		$state = $states_repo->get_by_id( $state_id );
 		if ( ! $state ) {
-			$error_msg = __( 'Selected state does not exist.', 'admbike-woo-locations' );
+			$error_msg = __( 'El estado seleccionado no existe.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
 			return;
 		}
 
 		if ( 'range' === $coverage_mode && ( '' === $postcode_from || '' === $postcode_to ) ) {
-			$error_msg = __( 'Range coverage requires both start and end postal codes.', 'admbike-woo-locations' );
+			$error_msg = __( 'La cobertura por rango requiere un código postal inicial y uno final.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
 			return;
 		}
 
 		if ( 'list' === $coverage_mode && '' === trim( $postcode_list ) ) {
-			$error_msg = __( 'List coverage requires at least one postal code.', 'admbike-woo-locations' );
+			$error_msg = __( 'La cobertura por lista requiere al menos un código postal.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
 			return;
 		}
@@ -98,14 +98,14 @@ if ( 'add' === $action || 'edit' === $action ) {
 			: $muni_repo->normalize_postcode_list( $postcode_list );
 
 		if ( '' === $postcode_coverage ) {
-			$error_msg = __( 'Postal coverage could not be normalized. Please enter valid 5-digit postcodes.', 'admbike-woo-locations' );
+			$error_msg = __( 'No se pudo normalizar la cobertura postal. Ingresa códigos postales válidos de 5 dígitos.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
 			return;
 		}
 
 		$existing = $muni_repo->get_items( array( 'state_id' => $state_id, 'normalized_name' => sanitize_title( $name ) ), 'id ASC', 1 );
 		if ( ! empty( $existing ) && ( 'add' === $action || (int) $existing[0]['id'] !== $id ) ) {
-			$error_msg = __( 'A municipality with this name already exists in the selected state.', 'admbike-woo-locations' );
+			$error_msg = __( 'Ya existe un municipio con ese nombre en el estado seleccionado.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/municipalities-form.php';
 			return;
 		}
@@ -121,16 +121,16 @@ if ( 'add' === $action || 'edit' === $action ) {
 		if ( 'add' === $action ) {
 			$result = $muni_repo->create( $data );
 			if ( $result ) {
-				$admin->redirect_with_message( 'success', urlencode( __( 'Municipality created successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) );
+				$admin->redirect_with_message( 'success', urlencode( __( 'Municipio creado correctamente.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) );
 			} else {
-				$error_msg = __( 'Failed to create municipality.', 'admbike-woo-locations' );
+				$error_msg = __( 'No se pudo crear el municipio.', 'admbike-woo-locations' );
 			}
 		} else {
 			$result = $muni_repo->update( $id, $data );
 			if ( $result ) {
-				$admin->redirect_with_message( 'success', urlencode( __( 'Municipality updated successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) );
+				$admin->redirect_with_message( 'success', urlencode( __( 'Municipio actualizado correctamente.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) );
 			} else {
-				$error_msg = __( 'Failed to update municipality.', 'admbike-woo-locations' );
+				$error_msg = __( 'No se pudo actualizar el municipio.', 'admbike-woo-locations' );
 			}
 		}
 
@@ -143,18 +143,18 @@ if ( 'add' === $action || 'edit' === $action ) {
 }
 
 if ( 'delete' === $action ) {
-	if ( ! $admin->verify_nonce( 'admbike_delete_municipality' ) ) {
-		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( ! $admin->verify_nonce( 'orpot_woo_locations_delete_municipality' ) ) {
+		wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 	}
 
 	$result = $muni_repo->delete( $id );
-	$admin->redirect_with_message( $result ? 'success' : 'error', urlencode( $result ? __( 'Municipality deleted.', 'admbike-woo-locations' ) : __( 'Failed to delete municipality.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) );
+	$admin->redirect_with_message( $result ? 'success' : 'error', urlencode( $result ? __( 'Municipio eliminado.', 'admbike-woo-locations' ) : __( 'No se pudo eliminar el municipio.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) );
 	return;
 }
 
 if ( 'toggle' === $action ) {
-	if ( ! $admin->verify_nonce( 'admbike_toggle_municipality' ) ) {
-		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( ! $admin->verify_nonce( 'orpot_woo_locations_toggle_municipality' ) ) {
+		wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 	}
 
 	$item = $muni_repo->get_by_id( $id );
@@ -162,7 +162,7 @@ if ( 'toggle' === $action ) {
 		$muni_repo->update( $id, array( 'is_active' => $item['is_active'] ? 0 : 1 ) );
 	}
 
-	$admin->redirect_with_message( 'success', urlencode( __( 'Status updated.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) );
+	$admin->redirect_with_message( 'success', urlencode( __( 'Estado actualizado.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) );
 	return;
 }
 
@@ -185,44 +185,44 @@ foreach ( $all_states as $s ) {
 }
 ?>
 <div class="wrap">
-	<h1 class="wp-heading-inline"><?php esc_html_e( 'Municipalities', 'admbike-woo-locations' ); ?></h1>
-	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG . '&action=add' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New', 'admbike-woo-locations' ); ?></a>
+	<h1 class="wp-heading-inline"><?php esc_html_e( 'Municipios', 'admbike-woo-locations' ); ?></h1>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG . '&action=add' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Agregar nuevo', 'admbike-woo-locations' ); ?></a>
 	<hr class="wp-header-end">
 
 	<form method="get" action="">
 		<input type="hidden" name="page" value="<?php echo esc_attr( ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ); ?>">
 		<p class="search-box">
-			<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by name…', 'admbike-woo-locations' ); ?>">
+			<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Buscar por nombre…', 'admbike-woo-locations' ); ?>">
 			<select name="state_id" style="vertical-align:middle;">
-				<option value=""><?php esc_html_e( 'All states', 'admbike-woo-locations' ); ?></option>
+				<option value=""><?php esc_html_e( 'Todos los estados', 'admbike-woo-locations' ); ?></option>
 				<?php foreach ( $all_states as $s ) : ?>
 					<option value="<?php echo esc_attr( $s['id'] ); ?>" <?php selected( $state_id, $s['id'] ); ?>><?php echo esc_html( $s['name'] ); ?></option>
 				<?php endforeach; ?>
 			</select>
 			<select name="is_active" style="vertical-align:middle;">
-				<option value=""><?php esc_html_e( 'All statuses', 'admbike-woo-locations' ); ?></option>
-				<option value="1" <?php selected( 1, $is_active ); ?>><?php esc_html_e( 'Active', 'admbike-woo-locations' ); ?></option>
-				<option value="0" <?php selected( 0, $is_active ); ?>><?php esc_html_e( 'Inactive', 'admbike-woo-locations' ); ?></option>
+				<option value=""><?php esc_html_e( 'Todos los estatus', 'admbike-woo-locations' ); ?></option>
+				<option value="1" <?php selected( 1, $is_active ); ?>><?php esc_html_e( 'Activo', 'admbike-woo-locations' ); ?></option>
+				<option value="0" <?php selected( 0, $is_active ); ?>><?php esc_html_e( 'Inactivo', 'admbike-woo-locations' ); ?></option>
 			</select>
-			<input type="submit" class="button" value="<?php esc_attr_e( 'Filter', 'admbike-woo-locations' ); ?>">
+			<input type="submit" class="button" value="<?php esc_attr_e( 'Filtrar', 'admbike-woo-locations' ); ?>">
 			<?php if ( $search || $state_id || null !== $is_active ) : ?>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Clear', 'admbike-woo-locations' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Limpiar', 'admbike-woo-locations' ); ?></a>
 			<?php endif; ?>
 		</p>
 	</form>
 
 	<?php if ( empty( $items ) ) : ?>
-		<p><?php esc_html_e( 'No municipalities found.', 'admbike-woo-locations' ); ?></p>
+		<p><?php esc_html_e( 'No se encontraron municipios.', 'admbike-woo-locations' ); ?></p>
 	<?php else : ?>
 		<table class="wp-list-table widefat fixed striped">
 			<thead>
 				<tr>
 					<th scope="col" style="width:60px;"><?php esc_html_e( 'ID', 'admbike-woo-locations' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Name', 'admbike-woo-locations' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Coverage', 'admbike-woo-locations' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'State', 'admbike-woo-locations' ); ?></th>
-					<th scope="col" style="width:100px;"><?php esc_html_e( 'Status', 'admbike-woo-locations' ); ?></th>
-					<th scope="col" style="width:160px;"><?php esc_html_e( 'Actions', 'admbike-woo-locations' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Nombre', 'admbike-woo-locations' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Cobertura', 'admbike-woo-locations' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Estatus', 'admbike-woo-locations' ); ?></th>
+					<th scope="col" style="width:100px;"><?php esc_html_e( 'Estado', 'admbike-woo-locations' ); ?></th>
+					<th scope="col" style="width:160px;"><?php esc_html_e( 'Acciones', 'admbike-woo-locations' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -230,17 +230,17 @@ foreach ( $all_states as $s ) {
 				foreach ( $items as $item ) :
 					$edit_url   = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG . '&action=edit&id=' . absint( $item['id'] ) ),
-						'admbike_edit_municipality_' . $item['id'],
+						'orpot_woo_locations_edit_municipality_' . $item['id'],
 						'_wpnonce'
 					);
 					$delete_url = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG . '&action=delete&id=' . absint( $item['id'] ) ),
-						'admbike_delete_municipality',
+						'orpot_woo_locations_delete_municipality',
 						'_wpnonce'
 					);
 					$toggle_url = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG . '&action=toggle&id=' . absint( $item['id'] ) ),
-						'admbike_toggle_municipality',
+						'orpot_woo_locations_toggle_municipality',
 						'_wpnonce'
 					);
 					?>
@@ -260,15 +260,15 @@ foreach ( $all_states as $s ) {
 						<td><?php echo esc_html( isset( $state_map[ $item['state_id'] ] ) ? $state_map[ $item['state_id'] ] : '—' ); ?></td>
 						<td>
 							<?php if ( $item['is_active'] ) : ?>
-								<span class="dashicons dashicons-yes-alt" style="color:#2271b1;" title="<?php esc_attr_e( 'Active', 'admbike-woo-locations' ); ?>"></span>
+								<span class="dashicons dashicons-yes-alt" style="color:#2271b1;" title="<?php esc_attr_e( 'Activo', 'admbike-woo-locations' ); ?>"></span>
 							<?php else : ?>
-								<span class="dashicons dashicons-dismiss" style="color:#d63638;" title="<?php esc_attr_e( 'Inactive', 'admbike-woo-locations' ); ?>"></span>
+								<span class="dashicons dashicons-dismiss" style="color:#d63638;" title="<?php esc_attr_e( 'Inactivo', 'admbike-woo-locations' ); ?>"></span>
 							<?php endif; ?>
 						</td>
 						<td>
-							<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'admbike-woo-locations' ); ?></a>
-							<a href="<?php echo esc_url( $toggle_url ); ?>" class="button button-small"><?php echo esc_html( $item['is_active'] ? __( 'Deactivate', 'admbike-woo-locations' ) : __( 'Activate', 'admbike-woo-locations' ) ); ?></a>
-							<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('<?php esc_attr_e( 'Delete this municipality?', 'admbike-woo-locations' ); ?>');"><?php esc_html_e( 'Delete', 'admbike-woo-locations' ); ?></a>
+							<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Editar', 'admbike-woo-locations' ); ?></a>
+							<a href="<?php echo esc_url( $toggle_url ); ?>" class="button button-small"><?php echo esc_html( $item['is_active'] ? __( 'Desactivar', 'admbike-woo-locations' ) : __( 'Activar', 'admbike-woo-locations' ) ); ?></a>
+							<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('<?php esc_attr_e( '¿Eliminar este municipio?', 'admbike-woo-locations' ); ?>');"><?php esc_html_e( 'Eliminar', 'admbike-woo-locations' ); ?></a>
 						</td>
 					</tr>
 				<?php endforeach; ?>

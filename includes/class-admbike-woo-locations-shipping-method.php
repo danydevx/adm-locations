@@ -20,14 +20,14 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 	 *
 	 * @var string
 	 */
-	public $id = 'admbike_locations';
+	public $id = 'orpot_woo_locations';
 
 	/**
 	 * Shipping method code.
 	 *
 	 * @var string
 	 */
-	public $method_code = 'admbike_locations';
+	public $method_code = 'orpot_woo_locations';
 
 	/**
 	 * Shipping method title.
@@ -50,7 +50,7 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 	 * @return void
 	 */
 	public function __construct( $instance_id = 0 ) {
-		$this->id                 = 'admbike_locations';
+		$this->id                 = 'orpot_woo_locations';
 		$this->method_title        = __( 'ADM Bike Locations', 'admbike-woo-locations' );
 		$this->method_description  = __( 'Calculates shipping based on state, municipality and postal code coverage rules.', 'admbike-woo-locations' );
 		$this->instance_id         = absint( $instance_id );
@@ -154,7 +154,7 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 	 */
 	protected function get_postcode_from_package( $package ) {
 		if ( isset( WC()->session ) && WC()->session->has_session() ) {
-			$location = WC()->session->get( 'admbike_checkout_location' );
+			$location = WC()->session->get( 'orpot_woo_locations_checkout_location' );
 			if ( ! empty( $location['postcode'] ) ) {
 				return preg_replace( '/[^0-9A-Za-z-]/', '', (string) $location['postcode'] );
 			}
@@ -179,7 +179,7 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 		$municipality_id = 0;
 
 		if ( isset( WC()->session ) && WC()->session->has_session() ) {
-			$location = (array) WC()->session->get( 'admbike_checkout_location', array() );
+			$location = (array) WC()->session->get( 'orpot_woo_locations_checkout_location', array() );
 			$state_id = ! empty( $location['state_id'] ) ? absint( $location['state_id'] ) : 0;
 			$municipality_id = ! empty( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0;
 		}
@@ -341,16 +341,16 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 			'description' => $customer_message,
 			'cost'  => $cost,
 			'meta_data' => array(
-				'_admbike_rule_id'     => (int) $applied_rule['id'],
-				'_admbike_rule_type'  => $applied_rule['rule_type'],
-				'_admbike_match_type' => $applied_rule['match_type'],
-				'_admbike_rule_priority' => isset( $applied_rule['priority'] ) ? (int) $applied_rule['priority'] : 100,
-				'_admbike_rule_specificity' => $this->get_match_specificity( (string) $applied_rule['match_type'] ),
-				'_admbike_postcode'   => $postcode,
-				'_admbike_state_id'   => $state_id,
-				'_admbike_municipality_id' => $municipality_id,
-				'_admbike_display_title' => $label,
-				'_admbike_customer_message' => $customer_message,
+				'_orpot_woo_locations_rule_id'     => (int) $applied_rule['id'],
+				'_orpot_woo_locations_rule_type'  => $applied_rule['rule_type'],
+				'_orpot_woo_locations_match_type' => $applied_rule['match_type'],
+				'_orpot_woo_locations_rule_priority' => isset( $applied_rule['priority'] ) ? (int) $applied_rule['priority'] : 100,
+				'_orpot_woo_locations_rule_specificity' => $this->get_match_specificity( (string) $applied_rule['match_type'] ),
+				'_orpot_woo_locations_postcode'   => $postcode,
+				'_orpot_woo_locations_state_id'   => $state_id,
+				'_orpot_woo_locations_municipality_id' => $municipality_id,
+				'_orpot_woo_locations_display_title' => $label,
+				'_orpot_woo_locations_customer_message' => $customer_message,
 			),
 		);
 

@@ -181,9 +181,9 @@
 	}
 
 	function syncNativeCheckoutFields() {
-		var $state = getField( '#admbike_state_id' );
-		var $municipality = getField( '#admbike_municipality_id' );
-		var $postcode = getField( '#admbike_postcode_select' );
+		var $state = getField( '#orpot_woo_locations_state_id' );
+		var $municipality = getField( '#orpot_woo_locations_municipality_id' );
+		var $postcode = getField( '#orpot_woo_locations_postcode_select' );
 		var state = getStateById( $state.val() );
 		var cityName = $municipality.find( 'option:selected' ).text() || '';
 
@@ -202,7 +202,7 @@
 	}
 
 	function populateStateSelect() {
-		var $state = getField( '#admbike_state_id' );
+		var $state = getField( '#orpot_woo_locations_state_id' );
 		var nativeState = getField( '#billing_state' ).val() || getField( '#shipping_state' ).val() || '';
 		var selectedState = $state.val() || '';
 		var matchedState = selectedState ? getStateById( selectedState ) : getStateByCode( nativeState );
@@ -216,8 +216,8 @@
 	}
 
 	function populateMunicipalitySelect() {
-		var $state = getField( '#admbike_state_id' );
-		var $municipality = getField( '#admbike_municipality_id' );
+		var $state = getField( '#orpot_woo_locations_state_id' );
+		var $municipality = getField( '#orpot_woo_locations_municipality_id' );
 		var nativeCity = getField( '#billing_city' ).val() || getField( '#shipping_city' ).val() || '';
 		var selectedValue = $municipality.val() || '';
 		var items = getMunicipalitiesByStateId( $state.val() );
@@ -243,8 +243,8 @@
 	}
 
 	function populatePostcodeSelect() {
-		var $municipality = getField( '#admbike_municipality_id' );
-		var $postcode = getField( '#admbike_postcode_select' );
+		var $municipality = getField( '#orpot_woo_locations_municipality_id' );
+		var $postcode = getField( '#orpot_woo_locations_postcode_select' );
 		var nativePostcode = getField( '#billing_postcode' ).val() || getField( '#shipping_postcode' ).val() || '';
 		var selectedValue = $postcode.val() || nativePostcode;
 		var items = getPostcodesByMunicipalityId( $municipality.val() );
@@ -258,13 +258,13 @@
 	}
 
 	function handleStateChange() {
-		var $state = getField( '#admbike_state_id' );
+		var $state = getField( '#orpot_woo_locations_state_id' );
 		var state = getStateById( $state.val() );
 
 		populateMunicipalitySelect();
-		getField( '#admbike_municipality_id' ).val( '' );
+		getField( '#orpot_woo_locations_municipality_id' ).val( '' );
 		populatePostcodeSelect();
-		getField( '#admbike_postcode_select' ).val( '' );
+		getField( '#orpot_woo_locations_postcode_select' ).val( '' );
 		setFieldValue( getField( '#billing_city' ), '' );
 		setFieldValue( getField( '#shipping_city' ), '' );
 		setFieldValue( getField( '#billing_postcode' ), '' );
@@ -294,7 +294,7 @@
 		}
 
 		var matchedState = nativeState ? getStateByCode( nativeState ) : null;
-		var $state = getField( '#admbike_state_id' );
+		var $state = getField( '#orpot_woo_locations_state_id' );
 
 		if ( $state.length && matchedState && String( $state.val() || '' ) !== String( matchedState.id ) ) {
 			$state.val( String( matchedState.id ) ).trigger( 'change' );
@@ -305,8 +305,8 @@
 	}
 
 	function handleMunicipalityChange() {
-		var $state = getField( '#admbike_state_id' );
-		var $municipality = getField( '#admbike_municipality_id' );
+		var $state = getField( '#orpot_woo_locations_state_id' );
+		var $municipality = getField( '#orpot_woo_locations_municipality_id' );
 		var state = getStateById( $state.val() );
 		var cityName = $municipality.find( 'option:selected' ).text() || '';
 
@@ -315,7 +315,7 @@
 		}
 
 		populatePostcodeSelect();
-		getField( '#admbike_postcode_select' ).val( '' );
+		getField( '#orpot_woo_locations_postcode_select' ).val( '' );
 		setFieldValue( getField( '#billing_city' ), cityName );
 		setFieldValue( getField( '#shipping_city' ), cityName );
 		setFieldValue( getField( '#billing_postcode' ), '' );
@@ -336,9 +336,9 @@
 	}
 
 	function handlePostcodeChange() {
-		var $state = getField( '#admbike_state_id' );
-		var $municipality = getField( '#admbike_municipality_id' );
-		var $postcode = getField( '#admbike_postcode_select' );
+		var $state = getField( '#orpot_woo_locations_state_id' );
+		var $municipality = getField( '#orpot_woo_locations_municipality_id' );
+		var $postcode = getField( '#orpot_woo_locations_postcode_select' );
 		var state = getStateById( $state.val() );
 		var cityName = $municipality.find( 'option:selected' ).text() || '';
 
@@ -362,11 +362,11 @@
 	}
 
 	function bindEvents() {
-		getField( '#admbike_state_id' ).on( 'change', handleStateChange );
+		getField( '#orpot_woo_locations_state_id' ).on( 'change', handleStateChange );
 		getField( '#billing_state' ).on( 'change', handleNativeStateChange );
 		getField( '#shipping_state' ).on( 'change', handleNativeStateChange );
-		getField( '#admbike_municipality_id' ).on( 'change', handleMunicipalityChange );
-		getField( '#admbike_postcode_select' ).on( 'change', handlePostcodeChange );
+		getField( '#orpot_woo_locations_municipality_id' ).on( 'change', handleMunicipalityChange );
+		getField( '#orpot_woo_locations_postcode_select' ).on( 'change', handlePostcodeChange );
 	}
 
 	function observeShippingMessages() {
@@ -386,7 +386,7 @@
 	}
 
 	function init() {
-		if ( ! getField( '#admbike_state_id' ).length ) {
+		if ( ! getField( '#orpot_woo_locations_state_id' ).length ) {
 			return;
 		}
 

@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class ADMBike_Woo_Locations_Store_API {
 
-	public const SESSION_KEY = 'admbike_checkout_location';
+	public const SESSION_KEY = 'orpot_woo_locations_checkout_location';
 
 	public function __construct() {
 		add_action( 'woocommerce_store_api_cart_errors', array( $this, 'validate_store_api_shipping_coverage' ), 10, 2 );
@@ -122,7 +122,7 @@ class ADMBike_Woo_Locations_Store_API {
 		}
 
 		if ( is_object( $errors ) && method_exists( $errors, 'add' ) ) {
-			$errors->add( 'admbike_no_coverage', $this->get_no_coverage_message() );
+			$errors->add( 'orpot_woo_locations_no_coverage', $this->get_no_coverage_message() );
 		}
 	}
 
@@ -147,17 +147,17 @@ class ADMBike_Woo_Locations_Store_API {
 		$muni     = ! empty( $location['municipality_id'] ) ? $muni_repo->get_by_id( $location['municipality_id'] ) : null;
 		$postcode = isset( $location['postcode'] ) ? sanitize_text_field( (string) $location['postcode'] ) : '';
 
-		$order->update_meta_data( '_admbike_state_id', isset( $location['state_id'] ) ? absint( $location['state_id'] ) : 0 );
-		$order->update_meta_data( '_admbike_state_name', $state ? $state['name'] : '' );
-		$order->update_meta_data( '_admbike_state_code', $state ? $state['code'] : '' );
-		$order->update_meta_data( '_admbike_municipality_id', isset( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0 );
-		$order->update_meta_data( '_admbike_municipality_name', $muni ? $muni['name'] : '' );
-		$order->update_meta_data( '_admbike_postcode', $postcode );
+		$order->update_meta_data( '_orpot_woo_locations_state_id', isset( $location['state_id'] ) ? absint( $location['state_id'] ) : 0 );
+		$order->update_meta_data( '_orpot_woo_locations_state_name', $state ? $state['name'] : '' );
+		$order->update_meta_data( '_orpot_woo_locations_state_code', $state ? $state['code'] : '' );
+		$order->update_meta_data( '_orpot_woo_locations_municipality_id', isset( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0 );
+		$order->update_meta_data( '_orpot_woo_locations_municipality_name', $muni ? $muni['name'] : '' );
+		$order->update_meta_data( '_orpot_woo_locations_postcode', $postcode );
 
 		if ( '' !== $postcode ) {
 			$pc_rows = $pc_repo->get_by_postcode( $postcode );
 			if ( ! empty( $pc_rows ) ) {
-				$order->update_meta_data( '_admbike_municipality_id', $pc_rows[0]['municipality_id'] );
+				$order->update_meta_data( '_orpot_woo_locations_municipality_id', $pc_rows[0]['municipality_id'] );
 			}
 		}
 
@@ -423,6 +423,6 @@ class ADMBike_Woo_Locations_Store_API {
 	}
 
 	protected function get_no_coverage_message() {
-		return admbike_woo_locations()->get_no_coverage_message();
+		return orpot_woo_locations()->get_no_coverage_message();
 	}
 }

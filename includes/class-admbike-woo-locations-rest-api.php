@@ -238,7 +238,7 @@ class ADMBike_Woo_Locations_REST_API {
 	public function can_set_checkout_location( $request ) {
 		$nonce = $request instanceof WP_REST_Request ? $request->get_header( 'x-admbike-nonce' ) : '';
 
-		return is_string( $nonce ) && '' !== $nonce && wp_verify_nonce( sanitize_text_field( $nonce ), 'admbike_checkout_location' );
+		return is_string( $nonce ) && '' !== $nonce && wp_verify_nonce( sanitize_text_field( $nonce ), 'orpot_woo_locations_checkout_location' );
 	}
 
 	/**
@@ -267,7 +267,7 @@ class ADMBike_Woo_Locations_REST_API {
 				array(
 					'available'       => false,
 					'rule_type'       => 'unavailable',
-					'message'         => admbike_woo_locations()->get_no_coverage_message(),
+					'message'         => orpot_woo_locations()->get_no_coverage_message(),
 					'postcode'        => $postcode,
 					'state_id'        => $state_id,
 					'municipality_id' => $municipality_id,
@@ -343,7 +343,7 @@ class ADMBike_Woo_Locations_REST_API {
 		$is_active = isset( $request['is_active'] ) ? (bool) $request['is_active'] : true;
 
 		$states = $is_active
-			? admbike_woo_locations()->get_frontend_states()
+			? orpot_woo_locations()->get_frontend_states()
 			: $this->states_repo()->get_items( array(), 'name ASC' );
 
 		$data = array_map(
@@ -371,7 +371,7 @@ class ADMBike_Woo_Locations_REST_API {
 		$is_active = isset( $request['is_active'] ) ? (bool) $request['is_active'] : true;
 
 		if ( $is_active ) {
-			$municipalities = admbike_woo_locations()->get_frontend_municipalities();
+			$municipalities = orpot_woo_locations()->get_frontend_municipalities();
 			if ( $state_id > 0 ) {
 				$municipalities = array_values(
 					array_filter(
@@ -416,7 +416,7 @@ class ADMBike_Woo_Locations_REST_API {
 		$is_active       = isset( $request['is_active'] ) ? (bool) $request['is_active'] : true;
 
 		if ( $is_active ) {
-			$postcodes = admbike_woo_locations()->get_frontend_postcodes();
+			$postcodes = orpot_woo_locations()->get_frontend_postcodes();
 			if ( $municipality_id > 0 ) {
 				$postcodes = array_values(
 					array_filter(
@@ -487,7 +487,7 @@ class ADMBike_Woo_Locations_REST_API {
 			$location = array(
 				'available'       => false,
 				'rule_type'       => 'unavailable',
-				'message'         => admbike_woo_locations()->get_no_coverage_message(),
+				'message'         => orpot_woo_locations()->get_no_coverage_message(),
 				'postcode'        => $postcode,
 				'state_id'        => $state_id,
 				'municipality_id' => $municipality_id,
@@ -503,7 +503,7 @@ class ADMBike_Woo_Locations_REST_API {
 					array(
 						'available'       => false,
 						'rule_type'       => 'unavailable',
-						'message'         => admbike_woo_locations()->get_no_coverage_message(),
+						'message'         => orpot_woo_locations()->get_no_coverage_message(),
 						'postcode'        => $postcode,
 						'state_id'        => $state_id,
 						'municipality_id' => $municipality_id,
@@ -518,7 +518,7 @@ class ADMBike_Woo_Locations_REST_API {
 					array(
 						'available'       => false,
 						'rule_type'       => 'unavailable',
-						'message'         => admbike_woo_locations()->get_no_coverage_message(),
+						'message'         => orpot_woo_locations()->get_no_coverage_message(),
 						'postcode'        => $postcode,
 						'state_id'        => $state_id,
 						'municipality_id' => $municipality_id,
@@ -554,7 +554,7 @@ class ADMBike_Woo_Locations_REST_API {
 					array(
 					'available' => false,
 					'rule_type' => 'unavailable',
-					'message'   => admbike_woo_locations()->get_no_coverage_message(),
+					'message'   => orpot_woo_locations()->get_no_coverage_message(),
 				),
 				200
 			);
@@ -571,7 +571,7 @@ class ADMBike_Woo_Locations_REST_API {
 						array(
 							'available'       => false,
 							'rule_type'       => 'unavailable',
-							'message'         => admbike_woo_locations()->get_no_coverage_message(),
+							'message'         => orpot_woo_locations()->get_no_coverage_message(),
 							'postcode'        => $postcode,
 							'state_id'        => $state_id,
 							'municipality_id' => 0,
@@ -593,7 +593,7 @@ class ADMBike_Woo_Locations_REST_API {
 						array(
 							'available'       => false,
 							'rule_type'       => 'unavailable',
-							'message'         => admbike_woo_locations()->get_no_coverage_message(),
+							'message'         => orpot_woo_locations()->get_no_coverage_message(),
 							'postcode'        => $postcode,
 							'state_id'        => $state_id,
 							'municipality_id' => 0,
@@ -638,7 +638,7 @@ class ADMBike_Woo_Locations_REST_API {
 				array(
 					'available'         => false,
 					'rule_type'         => 'unavailable',
-					'message'           => admbike_woo_locations()->get_no_coverage_message(),
+					'message'           => orpot_woo_locations()->get_no_coverage_message(),
 					'postcode'          => $postcode,
 					'state_id'          => $state_id,
 					'municipality_id'   => $municipality_id,
@@ -654,7 +654,7 @@ class ADMBike_Woo_Locations_REST_API {
 				array(
 					'available'    => false,
 					'rule_type'    => 'unavailable',
-					'message'      => admbike_woo_locations()->get_no_coverage_message(),
+					'message'      => orpot_woo_locations()->get_no_coverage_message(),
 					'postcode'     => $postcode,
 					'state_id'     => $state_id,
 					'municipality_id' => $municipality_id,

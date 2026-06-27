@@ -1,6 +1,6 @@
 <?php
 /**
- * Municipalities add/edit form partial.
+ * Formulario para agregar o editar municipios.
  *
  * @package ADMBike_Woo_Locations
  */
@@ -50,23 +50,23 @@ if ( $is_edit ) {
 <?php endif; ?>
 
 <div class="wrap">
-	<h1 class="wp-heading-inline"><?php echo esc_html( $is_edit ? __( 'Edit Municipality', 'admbike-woo-locations' ) : __( 'Add Municipality', 'admbike-woo-locations' ) ); ?></h1>
-	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) ); ?>" class="page-title-action"><?php esc_html_e( 'Back to list', 'admbike-woo-locations' ); ?></a>
+	<h1 class="wp-heading-inline"><?php echo esc_html( $is_edit ? __( 'Editar municipio', 'admbike-woo-locations' ) : __( 'Agregar municipio', 'admbike-woo-locations' ) ); ?></h1>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) ); ?>" class="page-title-action"><?php esc_html_e( 'Volver al listado', 'admbike-woo-locations' ); ?></a>
 	<hr class="wp-header-end">
 </div>
 
 <form method="post" action="" style="max-width:600px;">
 	<input type="hidden" name="_action" value="<?php echo esc_attr( $is_edit ? 'edit' : 'add' ); ?>">
-	<?php wp_nonce_field( 'admbike_save_municipality', 'admbike_muni_nonce' ); ?>
+	<?php wp_nonce_field( 'orpot_woo_locations_save_municipality', 'orpot_woo_locations_muni_nonce' ); ?>
 
 	<table class="form-table">
 		<tr>
 			<th scope="row">
-				<label for="state_id"><?php esc_html_e( 'State', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
+				<label for="state_id"><?php esc_html_e( 'Estado', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
 			</th>
 			<td>
 				<select id="state_id" name="state_id" required>
-					<option value=""><?php esc_html_e( 'Select a state…', 'admbike-woo-locations' ); ?></option>
+					<option value=""><?php esc_html_e( 'Selecciona un estado…', 'admbike-woo-locations' ); ?></option>
 					<?php foreach ( $states as $state ) : ?>
 						<option value="<?php echo esc_attr( $state['id'] ); ?>" <?php selected( $is_edit ? (int) $item['state_id'] : 0, $state['id'] ); ?>>
 							<?php echo esc_html( $state['name'] . ' (' . $state['code'] . ')' ); ?>
@@ -77,63 +77,63 @@ if ( $is_edit ) {
 		</tr>
 		<tr>
 			<th scope="row">
-				<label for="name"><?php esc_html_e( 'Municipality Name', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
+				<label for="name"><?php esc_html_e( 'Nombre del municipio', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
 			</th>
 			<td>
 				<input type="text" id="name" name="name" class="regular-text" required
 					value="<?php echo $is_edit ? esc_attr( $item['name'] ) : ''; ?>"
-					placeholder="<?php esc_attr_e( 'e.g. Guadalajara', 'admbike-woo-locations' ); ?>">
+					placeholder="<?php esc_attr_e( 'p. ej. Guadalajara', 'admbike-woo-locations' ); ?>">
 			</td>
 		</tr>
 		<tr>
 			<th scope="row">
-				<label for="postcode_coverage_mode"><?php esc_html_e( 'Coverage Mode', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
+				<label for="postcode_coverage_mode"><?php esc_html_e( 'Modo de cobertura', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
 			</th>
 			<td>
 				<select id="postcode_coverage_mode" name="postcode_coverage_mode" required>
-					<option value="range" <?php selected( 'range', $selected_coverage_mode ); ?>><?php esc_html_e( 'Range', 'admbike-woo-locations' ); ?></option>
-					<option value="list" <?php selected( 'list', $selected_coverage_mode ); ?>><?php esc_html_e( 'List', 'admbike-woo-locations' ); ?></option>
+					<option value="range" <?php selected( 'range', $selected_coverage_mode ); ?>><?php esc_html_e( 'Rango', 'admbike-woo-locations' ); ?></option>
+					<option value="list" <?php selected( 'list', $selected_coverage_mode ); ?>><?php esc_html_e( 'Lista', 'admbike-woo-locations' ); ?></option>
 				</select>
-				<p class="description"><?php esc_html_e( 'Range is default. List lets you enter specific 5-digit CPs separated by commas.', 'admbike-woo-locations' ); ?></p>
+				<p class="description"><?php esc_html_e( 'El rango es el valor predeterminado. La lista te permite ingresar CP de 5 dígitos separados por comas.', 'admbike-woo-locations' ); ?></p>
 			</td>
 		</tr>
 
 		<tr id="postcode_coverage_range_row" style="<?php echo 'range' !== $selected_coverage_mode ? 'display:none;' : ''; ?>">
 			<th scope="row">
-				<label><?php esc_html_e( 'Range Coverage', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
+				<label><?php esc_html_e( 'Cobertura por rango', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
 			</th>
 			<td>
 				<input type="text" id="postcode_from" name="postcode_from" inputmode="numeric" pattern="[0-9]*" maxlength="5" value="<?php echo esc_attr( $selected_postcode_from ); ?>" placeholder="44100" style="width:120px;">
 				<span style="display:inline-block;margin:0 8px;">-</span>
 				<input type="text" id="postcode_to" name="postcode_to" inputmode="numeric" pattern="[0-9]*" maxlength="5" value="<?php echo esc_attr( $selected_postcode_to ); ?>" placeholder="44109" style="width:120px;">
-				<p class="description"><?php esc_html_e( 'Enter the first and last CP in the municipality range.', 'admbike-woo-locations' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Ingresa el primer y último CP del municipio.', 'admbike-woo-locations' ); ?></p>
 			</td>
 		</tr>
 
 		<tr id="postcode_coverage_list_row" style="<?php echo 'list' !== $selected_coverage_mode ? 'display:none;' : ''; ?>">
 			<th scope="row">
-				<label for="postcode_coverage_list"><?php esc_html_e( 'List Coverage', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
+				<label for="postcode_coverage_list"><?php esc_html_e( 'Cobertura por lista', 'admbike-woo-locations' ); ?> <span style="color:#d63638;">*</span></label>
 			</th>
 			<td>
 				<textarea id="postcode_coverage_list" name="postcode_coverage_list" class="large-text code" rows="4" placeholder="44100, 44120, 44125"><?php echo esc_textarea( $selected_postcode_list ); ?></textarea>
-				<p class="description"><?php esc_html_e( 'Enter 5-digit CPs separated by commas. They will be normalized and de-duplicated.', 'admbike-woo-locations' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Ingresa CP de 5 dígitos separados por comas. Se normalizarán y se eliminarán duplicados.', 'admbike-woo-locations' ); ?></p>
 			</td>
 		</tr>
 		<tr>
-			<th scope="row"><?php esc_html_e( 'Active', 'admbike-woo-locations' ); ?></th>
+			<th scope="row"><?php esc_html_e( 'Activo', 'admbike-woo-locations' ); ?></th>
 			<td>
 				<label for="is_active">
 					<input type="checkbox" id="is_active" name="is_active" value="1"
 						<?php checked( $is_edit ? (int) $item['is_active'] : 1, 1 ); ?>>
-					<?php esc_html_e( 'Enable this municipality for shipping rules', 'admbike-woo-locations' ); ?>
+					<?php esc_html_e( 'Habilitar este municipio para las reglas de envío', 'admbike-woo-locations' ); ?>
 				</label>
 			</td>
 		</tr>
 	</table>
 
 	<p class="submit">
-		<button type="submit" class="button button-primary"><?php echo esc_html( $is_edit ? __( 'Update Municipality', 'admbike-woo-locations' ) : __( 'Add Municipality', 'admbike-woo-locations' ) ); ?></button>
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Cancel', 'admbike-woo-locations' ); ?></a>
+		<button type="submit" class="button button-primary"><?php echo esc_html( $is_edit ? __( 'Actualizar municipio', 'admbike-woo-locations' ) : __( 'Agregar municipio', 'admbike-woo-locations' ) ); ?></button>
+		<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::MUNICIPALITIES_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Cancelar', 'admbike-woo-locations' ); ?></a>
 	</p>
 </form>
 
@@ -176,28 +176,28 @@ jQuery(function($) {
 		clearCoverageErrors();
 
 		if (!$('#state_id').val()) {
-			showCoverageError($('#state_id'), '<?php echo esc_js( __( 'Select a state.', 'admbike-woo-locations' ) ); ?>');
+			showCoverageError($('#state_id'), '<?php echo esc_js( __( 'Selecciona un estado.', 'admbike-woo-locations' ) ); ?>');
 			return false;
 		}
 
 		if (!$('#name').val().trim()) {
-			showCoverageError($('#name'), '<?php echo esc_js( __( 'Enter a municipality name.', 'admbike-woo-locations' ) ); ?>');
+			showCoverageError($('#name'), '<?php echo esc_js( __( 'Ingresa un nombre de municipio.', 'admbike-woo-locations' ) ); ?>');
 			return false;
 		}
 
 		if (mode === 'range') {
 			if (!($postcodeFrom.val() || '').trim()) {
-				showCoverageError($postcodeFrom, '<?php echo esc_js( __( 'Enter the first postal code.', 'admbike-woo-locations' ) ); ?>');
+				showCoverageError($postcodeFrom, '<?php echo esc_js( __( 'Ingresa el primer código postal.', 'admbike-woo-locations' ) ); ?>');
 				return false;
 			}
 			if (!($postcodeTo.val() || '').trim()) {
-				showCoverageError($postcodeTo, '<?php echo esc_js( __( 'Enter the last postal code.', 'admbike-woo-locations' ) ); ?>');
+				showCoverageError($postcodeTo, '<?php echo esc_js( __( 'Ingresa el último código postal.', 'admbike-woo-locations' ) ); ?>');
 				return false;
 			}
 		}
 
 		if (mode === 'list' && !($postcodeList.val() || '').trim()) {
-			showCoverageError($postcodeList, '<?php echo esc_js( __( 'Enter at least one postal code.', 'admbike-woo-locations' ) ); ?>');
+			showCoverageError($postcodeList, '<?php echo esc_js( __( 'Ingresa al menos un código postal.', 'admbike-woo-locations' ) ); ?>');
 			return false;
 		}
 

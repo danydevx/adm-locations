@@ -89,21 +89,21 @@
 
 /* ─── Checkout Field Overrides ────────────────────────────────────────────── */
 
-#admbike_state_id_field,
-#admbike_municipality_id_field,
-#admbike_postcode_select_field {
+#orpot_woo_locations_state_id_field,
+#orpot_woo_locations_municipality_id_field,
+#orpot_woo_locations_postcode_select_field {
 	position: relative;
 }
 
-#admbike_state_id_field label,
-#admbike_municipality_id_field label,
-#admbike_postcode_select_field label {
+#orpot_woo_locations_state_id_field label,
+#orpot_woo_locations_municipality_id_field label,
+#orpot_woo_locations_postcode_select_field label {
 	font-weight: 600;
 }
 
-#admbike_state_id,
-#admbike_municipality_id,
-#admbike_postcode_select {
+#orpot_woo_locations_state_id,
+#orpot_woo_locations_municipality_id,
+#orpot_woo_locations_postcode_select {
 	max-width: 100%;
 	width: 100%;
 }

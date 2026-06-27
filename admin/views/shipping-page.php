@@ -9,11 +9,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$admin = admbike_woo_locations_admin();
+$admin = orpot_woo_locations_admin();
 $rules_repo = new ADMBike_Woo_Locations_Shipping_Rule_Repository();
 $states_repo = new ADMBike_Woo_Locations_State_Repository();
 $muni_repo = new ADMBike_Woo_Locations_Municipality_Repository();
-$sync = function_exists( 'admbike_woo_locations_shipping_zone_sync' ) ? admbike_woo_locations_shipping_zone_sync() : null;
+$sync = function_exists( 'orpot_woo_locations_shipping_zone_sync' ) ? orpot_woo_locations_shipping_zone_sync() : null;
 
 $action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : 'list';
 $id     = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0;
@@ -23,7 +23,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 	if ( 'edit' === $action && $id > 0 ) {
 		$item = $rules_repo->get_by_id( $id );
 		if ( ! $item ) {
-			wp_die( esc_html__( 'Rule not found.', 'admbike-woo-locations' ) );
+			wp_die( esc_html__( 'No se encontró la regla.', 'admbike-woo-locations' ) );
 		}
 	}
 
@@ -32,9 +32,9 @@ if ( 'add' === $action || 'edit' === $action ) {
 	$postcodes_repo = new ADMBike_Woo_Locations_Postcode_Repository();
 	$postcodes = $postcodes_repo->get_items( array( 'is_active' => 1 ), 'postcode ASC' );
 
-	if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['admbike_rule_nonce'] ) ) {
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['admbike_rule_nonce'] ) ), 'admbike_save_rule' ) || ! current_user_can( ADMBike_Woo_Locations_Admin::CAPABILITY ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['orpot_woo_locations_rule_nonce'] ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['orpot_woo_locations_rule_nonce'] ) ), 'orpot_woo_locations_save_rule' ) || ! current_user_can( ADMBike_Woo_Locations_Admin::CAPABILITY ) ) {
+			wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 		}
 
 		$post = wp_unslash( $_POST );
@@ -71,31 +71,31 @@ if ( 'add' === $action || 'edit' === $action ) {
 		);
 
 		if ( ! in_array( $match_type, $valid_match_types, true ) || ! in_array( $rule_type, $valid_rule_types, true ) ) {
-			$error_msg = __( 'Invalid match type or rule type.', 'admbike-woo-locations' );
+				$error_msg = __( 'El tipo de coincidencia o de regla no es válido.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
 			return;
 		}
 
 		if ( '' === trim( $rule_title ) ) {
-			$error_msg = __( 'Rule Title is required.', 'admbike-woo-locations' );
+				$error_msg = __( 'El título de la regla es obligatorio.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
 			return;
 		}
 
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_STATE === $match_type && $state_id <= 0 ) {
-			$error_msg = __( 'State is required for state-level rules.', 'admbike-woo-locations' );
+				$error_msg = __( 'Se requiere un estado para las reglas por estado.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
 			return;
 		}
 
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_MUNICIPALITY === $match_type && ( $state_id <= 0 || $muni_id <= 0 ) ) {
-			$error_msg = __( 'State and Municipality are required for municipality-level rules.', 'admbike-woo-locations' );
+				$error_msg = __( 'Se requieren estado y municipio para las reglas por municipio.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
 			return;
 		}
 
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE === $match_type && '' === $pc_code ) {
-			$error_msg = __( 'Postcode is required for postcode-level rules.', 'admbike-woo-locations' );
+				$error_msg = __( 'Se requiere un código postal para las reglas por código postal.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
 			return;
 		}
@@ -108,13 +108,13 @@ if ( 'add' === $action || 'edit' === $action ) {
 		}
 
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE_RANGE === $match_type && ( empty( $pc_from ) || empty( $pc_to ) ) ) {
-			$error_msg = __( 'Postcode range (from/to) is required for postcode range rules.', 'admbike-woo-locations' );
+				$error_msg = __( 'Se requiere un rango de códigos postales (de / a) para las reglas por rango.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
 			return;
 		}
 
 		if ( ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_POSTCODE_RANGE === $match_type && $state_id <= 0 ) {
-			$error_msg = __( 'State is required for postcode range rules.', 'admbike-woo-locations' );
+				$error_msg = __( 'Se requiere un estado para las reglas por rango de códigos postales.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/shipping-rules-form.php';
 			return;
 		}
@@ -151,9 +151,9 @@ if ( 'add' === $action || 'edit' === $action ) {
 					}
 				}
 
-				$admin->redirect_with_message( 'success', urlencode( __( 'Rule created successfully and WooCommerce zone synced.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
+					$admin->redirect_with_message( 'success', urlencode( __( 'Regla creada correctamente y zona de WooCommerce sincronizada.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
 			} else {
-				$error_msg = __( 'Failed to create rule.', 'admbike-woo-locations' );
+				$error_msg = __( 'No se pudo crear la regla.', 'admbike-woo-locations' );
 			}
 		} else {
 			$result = $rules_repo->update( $id, $data );
@@ -170,9 +170,9 @@ if ( 'add' === $action || 'edit' === $action ) {
 					}
 				}
 
-				$admin->redirect_with_message( 'success', urlencode( __( 'Rule updated successfully and WooCommerce zone synced.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
+					$admin->redirect_with_message( 'success', urlencode( __( 'Regla actualizada correctamente y zona de WooCommerce sincronizada.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
 			} else {
-				$error_msg = __( 'Failed to update rule.', 'admbike-woo-locations' );
+				$error_msg = __( 'No se pudo actualizar la regla.', 'admbike-woo-locations' );
 			}
 		}
 
@@ -185,8 +185,8 @@ if ( 'add' === $action || 'edit' === $action ) {
 }
 
 if ( 'delete' === $action ) {
-	if ( ! $admin->verify_nonce( 'admbike_delete_rule' ) ) {
-		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( ! $admin->verify_nonce( 'orpot_woo_locations_delete_rule' ) ) {
+		wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 	}
 
 	$item = $rules_repo->get_by_id( $id );
@@ -200,13 +200,13 @@ if ( 'delete' === $action ) {
 	}
 
 	$result = $rules_repo->delete( $id );
-	$admin->redirect_with_message( $result ? 'success' : 'error', urlencode( $result ? __( 'Rule deleted.', 'admbike-woo-locations' ) : __( 'Failed to delete rule.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
+	$admin->redirect_with_message( $result ? 'success' : 'error', urlencode( $result ? __( 'Regla eliminada.', 'admbike-woo-locations' ) : __( 'No se pudo eliminar la regla.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
 	return;
 }
 
 if ( 'toggle' === $action ) {
-	if ( ! $admin->verify_nonce( 'admbike_toggle_rule' ) ) {
-		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( ! $admin->verify_nonce( 'orpot_woo_locations_toggle_rule' ) ) {
+		wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 	}
 
 	$item = $rules_repo->get_by_id( $id );
@@ -222,7 +222,7 @@ if ( 'toggle' === $action ) {
 		}
 	}
 
-	$admin->redirect_with_message( 'success', urlencode( __( 'Status updated.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
+	$admin->redirect_with_message( 'success', urlencode( __( 'Estado actualizado.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) );
 	return;
 }
 
@@ -250,25 +250,25 @@ if ( 'preview' === $action ) {
 	}
 	?>
 <div class="wrap">
-	<h1 class="wp-heading-inline"><?php esc_html_e( 'Shipping Rules Preview', 'admbike-woo-locations' ); ?></h1>
-	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) ); ?>" class="page-title-action"><?php esc_html_e( 'Back to list', 'admbike-woo-locations' ); ?></a>
+	<h1 class="wp-heading-inline"><?php esc_html_e( 'Vista previa de reglas de envío', 'admbike-woo-locations' ); ?></h1>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) ); ?>" class="page-title-action"><?php esc_html_e( 'Volver al listado', 'admbike-woo-locations' ); ?></a>
 	<hr class="wp-header-end">
 
 	<?php if ( empty( $rules ) ) : ?>
-		<div class="notice notice-warning"><p><?php esc_html_e( 'No matching rules found for the selected location.', 'admbike-woo-locations' ); ?></p></div>
+		<div class="notice notice-warning"><p><?php esc_html_e( 'No se encontraron reglas que coincidan con la ubicación seleccionada.', 'admbike-woo-locations' ); ?></p></div>
 	<?php else : ?>
-		<p><?php esc_html_e( 'Rules matched (ordered by priority):', 'admbike-woo-locations' ); ?></p>
+		<p><?php esc_html_e( 'Reglas encontradas (ordenadas por prioridad):', 'admbike-woo-locations' ); ?></p>
 		<table class="wp-list-table widefat fixed striped">
 			<thead>
 				<tr>
 					<th style="width:60px;">#</th>
-					<th><?php esc_html_e( 'Rule Title', 'admbike-woo-locations' ); ?></th>
-					<th><?php esc_html_e( 'Match Type', 'admbike-woo-locations' ); ?></th>
-					<th><?php esc_html_e( 'Scope', 'admbike-woo-locations' ); ?></th>
-					<th><?php esc_html_e( 'Rule Type', 'admbike-woo-locations' ); ?></th>
-					<th><?php esc_html_e( 'Cost', 'admbike-woo-locations' ); ?></th>
-					<th style="width:80px;"><?php esc_html_e( 'Priority', 'admbike-woo-locations' ); ?></th>
-					<th><?php esc_html_e( 'Notes', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Título de la regla', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Tipo de coincidencia', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Ámbito', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Tipo de regla', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Costo', 'admbike-woo-locations' ); ?></th>
+					<th style="width:80px;"><?php esc_html_e( 'Prioridad', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Notas', 'admbike-woo-locations' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -299,9 +299,9 @@ if ( 'preview' === $action ) {
 						<td>
 							<?php
 							if ( 'free' === $rule['rule_type'] ) {
-								esc_html_e( 'Free', 'admbike-woo-locations' );
+							esc_html_e( 'Gratis', 'admbike-woo-locations' );
 							} elseif ( 'unavailable' === $rule['rule_type'] ) {
-								esc_html_e( 'Blocked', 'admbike-woo-locations' );
+							esc_html_e( 'Bloqueada', 'admbike-woo-locations' );
 							} else {
 								echo esc_html( number_format( (float) $rule['shipping_cost'], 2 ) . ' ' . esc_html( $rule['currency_code'] ) );
 							}
@@ -313,7 +313,7 @@ if ( 'preview' === $action ) {
 				<?php endforeach; ?>
 			</tbody>
 		</table>
-		<p><?php esc_html_e( 'The first matching rule (row 1) will be applied at checkout. A blocked rule prevents checkout for that location.', 'admbike-woo-locations' ); ?></p>
+			<p><?php esc_html_e( 'La primera regla coincidente (fila 1) se aplicará en el pago. Una regla bloqueada impide el pago para esa ubicación.', 'admbike-woo-locations' ); ?></p>
 	<?php endif; ?>
 </div>
 	<?php
@@ -356,55 +356,55 @@ $states_all = $states_repo_local->get_items( array(), 'name ASC' );
 $munis_all  = $muni_repo_local->get_items( array(), 'name ASC' );
 ?>
 <div class="wrap">
-	<h1 class="wp-heading-inline"><?php esc_html_e( 'Shipping Rules', 'admbike-woo-locations' ); ?></h1>
-	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG . '&action=add' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New', 'admbike-woo-locations' ); ?></a>
-	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG . '&action=preview' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Preview', 'admbike-woo-locations' ); ?></a>
+	<h1 class="wp-heading-inline"><?php esc_html_e( 'Reglas de envío', 'admbike-woo-locations' ); ?></h1>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG . '&action=add' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Agregar nuevo', 'admbike-woo-locations' ); ?></a>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG . '&action=preview' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Vista previa', 'admbike-woo-locations' ); ?></a>
 	<hr class="wp-header-end">
 
 	<form method="get" action="">
 		<input type="hidden" name="page" value="<?php echo esc_attr( ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ); ?>">
 		<p class="search-box">
-			<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search by title, notes, postcode…', 'admbike-woo-locations' ); ?>">
+			<input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Buscar por título, notas, código postal…', 'admbike-woo-locations' ); ?>">
 			<select name="rule_type" style="vertical-align:middle;">
-				<option value=""><?php esc_html_e( 'All rule types', 'admbike-woo-locations' ); ?></option>
-				<option value="free" <?php selected( 'free', $rule_type ); ?>><?php esc_html_e( 'Free', 'admbike-woo-locations' ); ?></option>
-				<option value="paid" <?php selected( 'paid', $rule_type ); ?>><?php esc_html_e( 'Paid', 'admbike-woo-locations' ); ?></option>
-				<option value="unavailable" <?php selected( 'unavailable', $rule_type ); ?>><?php esc_html_e( 'Unavailable', 'admbike-woo-locations' ); ?></option>
+				<option value=""><?php esc_html_e( 'Todos los tipos', 'admbike-woo-locations' ); ?></option>
+				<option value="free" <?php selected( 'free', $rule_type ); ?>><?php esc_html_e( 'Gratis', 'admbike-woo-locations' ); ?></option>
+				<option value="paid" <?php selected( 'paid', $rule_type ); ?>><?php esc_html_e( 'Pagada', 'admbike-woo-locations' ); ?></option>
+				<option value="unavailable" <?php selected( 'unavailable', $rule_type ); ?>><?php esc_html_e( 'No disponible', 'admbike-woo-locations' ); ?></option>
 			</select>
 			<select name="match_type" style="vertical-align:middle;">
-				<option value=""><?php esc_html_e( 'All match types', 'admbike-woo-locations' ); ?></option>
-				<option value="state" <?php selected( 'state', $match_type ); ?>><?php esc_html_e( 'State', 'admbike-woo-locations' ); ?></option>
-				<option value="municipality" <?php selected( 'municipality', $match_type ); ?>><?php esc_html_e( 'Municipality', 'admbike-woo-locations' ); ?></option>
-				<option value="postcode" <?php selected( 'postcode', $match_type ); ?>><?php esc_html_e( 'Postcode', 'admbike-woo-locations' ); ?></option>
-				<option value="postcode_range" <?php selected( 'postcode_range', $match_type ); ?>><?php esc_html_e( 'Postcode Range', 'admbike-woo-locations' ); ?></option>
+				<option value=""><?php esc_html_e( 'Todos los tipos de coincidencia', 'admbike-woo-locations' ); ?></option>
+				<option value="state" <?php selected( 'state', $match_type ); ?>><?php esc_html_e( 'Estado', 'admbike-woo-locations' ); ?></option>
+				<option value="municipality" <?php selected( 'municipality', $match_type ); ?>><?php esc_html_e( 'Municipio', 'admbike-woo-locations' ); ?></option>
+				<option value="postcode" <?php selected( 'postcode', $match_type ); ?>><?php esc_html_e( 'Código postal', 'admbike-woo-locations' ); ?></option>
+				<option value="postcode_range" <?php selected( 'postcode_range', $match_type ); ?>><?php esc_html_e( 'Rango de códigos postales', 'admbike-woo-locations' ); ?></option>
 			</select>
 			<select name="is_active" style="vertical-align:middle;">
-				<option value=""><?php esc_html_e( 'All statuses', 'admbike-woo-locations' ); ?></option>
-				<option value="1" <?php selected( 1, $is_active ); ?>><?php esc_html_e( 'Active', 'admbike-woo-locations' ); ?></option>
-				<option value="0" <?php selected( 0, $is_active ); ?>><?php esc_html_e( 'Inactive', 'admbike-woo-locations' ); ?></option>
+				<option value=""><?php esc_html_e( 'Todos los estatus', 'admbike-woo-locations' ); ?></option>
+				<option value="1" <?php selected( 1, $is_active ); ?>><?php esc_html_e( 'Activo', 'admbike-woo-locations' ); ?></option>
+				<option value="0" <?php selected( 0, $is_active ); ?>><?php esc_html_e( 'Inactivo', 'admbike-woo-locations' ); ?></option>
 			</select>
-			<input type="submit" class="button" value="<?php esc_attr_e( 'Filter', 'admbike-woo-locations' ); ?>">
+			<input type="submit" class="button" value="<?php esc_attr_e( 'Filtrar', 'admbike-woo-locations' ); ?>">
 			<?php if ( $search || $rule_type || $match_type || null !== $is_active ) : ?>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Clear', 'admbike-woo-locations' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Limpiar', 'admbike-woo-locations' ); ?></a>
 			<?php endif; ?>
 		</p>
 	</form>
 
 	<?php if ( empty( $items ) ) : ?>
-		<p><?php esc_html_e( 'No rules found.', 'admbike-woo-locations' ); ?></p>
+		<p><?php esc_html_e( 'No se encontraron reglas.', 'admbike-woo-locations' ); ?></p>
 	<?php else : ?>
 		<table class="wp-list-table widefat fixed striped">
 			<thead>
 				<tr>
 					<th style="width:50px;"><?php esc_html_e( 'ID', 'admbike-woo-locations' ); ?></th>
-					<th><?php esc_html_e( 'Rule Title', 'admbike-woo-locations' ); ?></th>
-					<th style="width:120px;"><?php esc_html_e( 'Match Type', 'admbike-woo-locations' ); ?></th>
-					<th><?php esc_html_e( 'Scope', 'admbike-woo-locations' ); ?></th>
-					<th style="width:100px;"><?php esc_html_e( 'Rule Type', 'admbike-woo-locations' ); ?></th>
-					<th style="width:100px;"><?php esc_html_e( 'Cost', 'admbike-woo-locations' ); ?></th>
-					<th style="width:70px;"><?php esc_html_e( 'Priority', 'admbike-woo-locations' ); ?></th>
-					<th style="width:60px;"><?php esc_html_e( 'Status', 'admbike-woo-locations' ); ?></th>
-					<th style="width:160px;"><?php esc_html_e( 'Actions', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Título de la regla', 'admbike-woo-locations' ); ?></th>
+					<th style="width:120px;"><?php esc_html_e( 'Tipo de coincidencia', 'admbike-woo-locations' ); ?></th>
+					<th><?php esc_html_e( 'Ámbito', 'admbike-woo-locations' ); ?></th>
+					<th style="width:100px;"><?php esc_html_e( 'Tipo de regla', 'admbike-woo-locations' ); ?></th>
+					<th style="width:100px;"><?php esc_html_e( 'Costo', 'admbike-woo-locations' ); ?></th>
+					<th style="width:70px;"><?php esc_html_e( 'Prioridad', 'admbike-woo-locations' ); ?></th>
+					<th style="width:60px;"><?php esc_html_e( 'Estatus', 'admbike-woo-locations' ); ?></th>
+					<th style="width:160px;"><?php esc_html_e( 'Acciones', 'admbike-woo-locations' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -412,17 +412,17 @@ $munis_all  = $muni_repo_local->get_items( array(), 'name ASC' );
 				foreach ( $items as $item ) :
 					$edit_url   = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG . '&action=edit&id=' . absint( $item['id'] ) ),
-						'admbike_edit_rule_' . $item['id'],
+						'orpot_woo_locations_edit_rule_' . $item['id'],
 						'_wpnonce'
 					);
 					$delete_url = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG . '&action=delete&id=' . absint( $item['id'] ) ),
-						'admbike_delete_rule',
+						'orpot_woo_locations_delete_rule',
 						'_wpnonce'
 					);
 					$toggle_url = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::SHIPPING_SLUG . '&action=toggle&id=' . absint( $item['id'] ) ),
-						'admbike_toggle_rule',
+						'orpot_woo_locations_toggle_rule',
 						'_wpnonce'
 					);
 
@@ -439,20 +439,20 @@ $munis_all  = $muni_repo_local->get_items( array(), 'name ASC' );
 
 					$cost_display = '';
 					if ( 'free' === $item['rule_type'] ) {
-						$cost_display = esc_html__( 'Free', 'admbike-woo-locations' );
+						$cost_display = esc_html__( 'Gratis', 'admbike-woo-locations' );
 					} elseif ( 'unavailable' === $item['rule_type'] ) {
-						$cost_display = '<span style="color:red;">' . esc_html__( 'Blocked', 'admbike-woo-locations' ) . '</span>';
+						$cost_display = '<span style="color:red;">' . esc_html__( 'Bloqueada', 'admbike-woo-locations' ) . '</span>';
 					} else {
 						$cost_display = esc_html( number_format( (float) $item['shipping_cost'], 2 ) . ' ' . esc_html( $item['currency_code'] ) );
 					}
 
 					$rule_type_badge = '';
 					if ( 'free' === $item['rule_type'] ) {
-						$rule_type_badge = '<span style="background:#d4edda;color:#155724;padding:2px 8px;border-radius:3px;font-size:11px;">' . esc_html__( 'FREE', 'admbike-woo-locations' ) . '</span>';
+						$rule_type_badge = '<span style="background:#d4edda;color:#155724;padding:2px 8px;border-radius:3px;font-size:11px;">' . esc_html__( 'GRATIS', 'admbike-woo-locations' ) . '</span>';
 					} elseif ( 'paid' === $item['rule_type'] ) {
-						$rule_type_badge = '<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:3px;font-size:11px;">' . esc_html__( 'PAID', 'admbike-woo-locations' ) . '</span>';
+						$rule_type_badge = '<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:3px;font-size:11px;">' . esc_html__( 'PAGADA', 'admbike-woo-locations' ) . '</span>';
 					} else {
-						$rule_type_badge = '<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:3px;font-size:11px;">' . esc_html__( 'BLOCKED', 'admbike-woo-locations' ) . '</span>';
+						$rule_type_badge = '<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:3px;font-size:11px;">' . esc_html__( 'BLOQUEADA', 'admbike-woo-locations' ) . '</span>';
 					}
 					?>
 					<tr>
@@ -465,15 +465,15 @@ $munis_all  = $muni_repo_local->get_items( array(), 'name ASC' );
 						<td><?php echo esc_html( $item['priority'] ); ?></td>
 						<td style="text-align:center;">
 							<?php if ( $item['is_active'] ) : ?>
-								<span class="dashicons dashicons-yes-alt" style="color:#2271b1;" title="<?php esc_attr_e( 'Active', 'admbike-woo-locations' ); ?>"></span>
+				<span class="dashicons dashicons-yes-alt" style="color:#2271b1;" title="<?php esc_attr_e( 'Activo', 'admbike-woo-locations' ); ?>"></span>
 							<?php else : ?>
-								<span class="dashicons dashicons-dismiss" style="color:#d63638;" title="<?php esc_attr_e( 'Inactive', 'admbike-woo-locations' ); ?>"></span>
+				<span class="dashicons dashicons-dismiss" style="color:#d63638;" title="<?php esc_attr_e( 'Inactivo', 'admbike-woo-locations' ); ?>"></span>
 							<?php endif; ?>
 						</td>
 						<td>
-							<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'admbike-woo-locations' ); ?></a>
-							<a href="<?php echo esc_url( $toggle_url ); ?>" class="button button-small"><?php echo esc_html( $item['is_active'] ? __( 'Deactivate', 'admbike-woo-locations' ) : __( 'Activate', 'admbike-woo-locations' ) ); ?></a>
-							<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('<?php esc_attr_e( 'Delete this rule?', 'admbike-woo-locations' ); ?>');"><?php esc_html_e( 'Delete', 'admbike-woo-locations' ); ?></a>
+							<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Editar', 'admbike-woo-locations' ); ?></a>
+							<a href="<?php echo esc_url( $toggle_url ); ?>" class="button button-small"><?php echo esc_html( $item['is_active'] ? __( 'Desactivar', 'admbike-woo-locations' ) : __( 'Activar', 'admbike-woo-locations' ) ); ?></a>
+							<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('<?php esc_attr_e( '¿Eliminar esta regla?', 'admbike-woo-locations' ); ?>');"><?php esc_html_e( 'Eliminar', 'admbike-woo-locations' ); ?></a>
 						</td>
 					</tr>
 				<?php endforeach; ?>

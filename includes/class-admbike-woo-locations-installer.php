@@ -20,7 +20,7 @@ class ADMBike_Woo_Locations_Installer {
 	 *
 	 * @var string
 	 */
-	const DB_VERSION_OPTION = 'admbike_woo_locations_db_version';
+	const DB_VERSION_OPTION = 'orpot_woo_locations_db_version';
 
 	/**
 	 * Run activation tasks.
@@ -49,7 +49,7 @@ class ADMBike_Woo_Locations_Installer {
 		self::delete_managed_shipping_zones();
 		self::drop_plugin_tables();
 		delete_option( self::DB_VERSION_OPTION );
-		delete_option( 'admbike_no_coverage_message' );
+		delete_option( 'orpot_woo_locations_no_coverage_message' );
 	}
 
 	/**
@@ -77,10 +77,10 @@ class ADMBike_Woo_Locations_Installer {
 
 		$charset_collate = $wpdb->get_charset_collate();
 
-		$states_table         = $wpdb->prefix . 'admbike_locations_states';
-		$municipalities_table = $wpdb->prefix . 'admbike_locations_municipalities';
-		$postcodes_table      = $wpdb->prefix . 'admbike_locations_postcodes';
-		$shipping_rules_table = $wpdb->prefix . 'admbike_locations_shipping_rules';
+		$states_table         = $wpdb->prefix . 'orpot_woo_locations_states';
+		$municipalities_table = $wpdb->prefix . 'orpot_woo_locations_municipalities';
+		$postcodes_table      = $wpdb->prefix . 'orpot_woo_locations_postcodes';
+		$shipping_rules_table = $wpdb->prefix . 'orpot_woo_locations_shipping_rules';
 
 		$states_sql = "CREATE TABLE {$states_table} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -188,8 +188,8 @@ class ADMBike_Woo_Locations_Installer {
 	protected static function backfill_shipping_rule_postcode_code() {
 		global $wpdb;
 
-		$shipping_rules_table = $wpdb->prefix . 'admbike_locations_shipping_rules';
-		$postcodes_table      = $wpdb->prefix . 'admbike_locations_postcodes';
+		$shipping_rules_table = $wpdb->prefix . 'orpot_woo_locations_shipping_rules';
+		$postcodes_table      = $wpdb->prefix . 'orpot_woo_locations_postcodes';
 
 		$wpdb->query(
 			"UPDATE {$shipping_rules_table} sr
@@ -207,7 +207,7 @@ class ADMBike_Woo_Locations_Installer {
 	protected static function backfill_municipality_coverage_mode() {
 		global $wpdb;
 
-		$municipalities_table = $wpdb->prefix . 'admbike_locations_municipalities';
+		$municipalities_table = $wpdb->prefix . 'orpot_woo_locations_municipalities';
 
 		$wpdb->query(
 			"UPDATE {$municipalities_table}
@@ -227,7 +227,7 @@ class ADMBike_Woo_Locations_Installer {
 	protected static function backfill_shipping_rule_title() {
 		global $wpdb;
 
-		$shipping_rules_table = $wpdb->prefix . 'admbike_locations_shipping_rules';
+		$shipping_rules_table = $wpdb->prefix . 'orpot_woo_locations_shipping_rules';
 
 		$wpdb->query(
 			"UPDATE {$shipping_rules_table}
@@ -252,7 +252,7 @@ class ADMBike_Woo_Locations_Installer {
 
 		$zones_table       = $wpdb->prefix . 'woocommerce_shipping_zones';
 		$methods_table     = $wpdb->prefix . 'woocommerce_shipping_zone_methods';
-		$rules_table       = $wpdb->prefix . 'admbike_locations_shipping_rules';
+		$rules_table       = $wpdb->prefix . 'orpot_woo_locations_shipping_rules';
 		$zone_ids          = array();
 		$method_option_ids = array();
 
@@ -302,10 +302,10 @@ class ADMBike_Woo_Locations_Installer {
 		global $wpdb;
 
 		$tables = array(
-			$wpdb->prefix . 'admbike_locations_states',
-			$wpdb->prefix . 'admbike_locations_municipalities',
-			$wpdb->prefix . 'admbike_locations_postcodes',
-			$wpdb->prefix . 'admbike_locations_shipping_rules',
+			$wpdb->prefix . 'orpot_woo_locations_states',
+			$wpdb->prefix . 'orpot_woo_locations_municipalities',
+			$wpdb->prefix . 'orpot_woo_locations_postcodes',
+			$wpdb->prefix . 'orpot_woo_locations_shipping_rules',
 		);
 
 		foreach ( $tables as $table ) {
@@ -322,7 +322,7 @@ class ADMBike_Woo_Locations_Installer {
 		global $wpdb;
 
 		$zone_ids = array();
-		$shipping_rules_table = $wpdb->prefix . 'admbike_locations_shipping_rules';
+		$shipping_rules_table = $wpdb->prefix . 'orpot_woo_locations_shipping_rules';
 
 		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $shipping_rules_table ) ) ) {
 			$zone_ids = $wpdb->get_col( "SELECT DISTINCT wc_zone_id FROM {$shipping_rules_table} WHERE wc_zone_id > 0" );

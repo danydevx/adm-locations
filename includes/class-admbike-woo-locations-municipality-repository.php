@@ -24,7 +24,7 @@ class ADMBike_Woo_Locations_Municipality_Repository extends ADMBike_Woo_Location
 	 * @return string
 	 */
 	protected function get_table_suffix() {
-		return 'admbike_locations_municipalities';
+		return 'orpot_woo_locations_municipalities';
 	}
 
 	/**

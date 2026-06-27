@@ -46,7 +46,7 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 	 * @return string
 	 */
 	protected function get_table_suffix() {
-		return 'admbike_locations_shipping_rules';
+		return 'orpot_woo_locations_shipping_rules';
 	}
 
 	/**
@@ -261,7 +261,7 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 
 		$postcode = (string) $this->wpdb->get_var(
 			$this->wpdb->prepare(
-				"SELECT postcode FROM {$this->wpdb->prefix}admbike_locations_postcodes WHERE id = %d",
+				"SELECT postcode FROM {$this->wpdb->prefix}orpot_woo_locations_postcodes WHERE id = %d",
 				$pc_id
 			)
 		);
@@ -512,7 +512,7 @@ class ADMBike_Woo_Locations_Shipping_Rule_Repository extends ADMBike_Woo_Locatio
 		if ( $postcode !== '' ) {
 			$postcode_rows = $this->wpdb->get_results(
 				$this->wpdb->prepare(
-					"SELECT * FROM {$this->table_name} WHERE is_active = 1 AND match_type = %s AND (postcode_code = %s OR postcode_id IN (SELECT id FROM {$this->wpdb->prefix}admbike_locations_postcodes WHERE postcode = %s))",
+					"SELECT * FROM {$this->table_name} WHERE is_active = 1 AND match_type = %s AND (postcode_code = %s OR postcode_id IN (SELECT id FROM {$this->wpdb->prefix}orpot_woo_locations_postcodes WHERE postcode = %s))",
 					self::MATCH_POSTCODE,
 					$postcode,
 					$postcode

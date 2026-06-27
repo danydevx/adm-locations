@@ -305,10 +305,10 @@ wp-content/uploads/admbike-woo-locations.log
 
 El plugin crea cuatro tablas personalizadas:
 
-- `admbike_states` — Estados
-- `admbike_municipalities` — Municipios
-- `admbike_postcodes` — Códigos Postales
-- `admbike_shipping_rules` — Reglas de cobertura de envíos
+- `orpot_woo_locations_states` — Estados
+- `orpot_woo_locations_municipalities` — Municipios
+- `orpot_woo_locations_postcodes` — Códigos Postales
+- `orpot_woo_locations_shipping_rules` — Reglas de cobertura de envíos
 
 ---
 
@@ -333,20 +333,20 @@ El plugin expone una API REST en:
 
 ## Actions
 
-- `admbike_woo_locations_activated`  
+- `orpot_woo_locations_activated`  
   Se ejecuta al activar el plugin.
 
-- `admbike_shipping_rule_applied`  
+- `orpot_woo_locations_shipping_rule_applied`  
   Se ejecuta cuando una regla de envío es aplicada durante el Checkout.
 
 ---
 
 ## Filters
 
-- `admbike_woo_locations_checkout_fields`  
+- `orpot_woo_locations_checkout_fields`  
   Permite modificar las etiquetas de los campos del Checkout.
 
-- `admbike_woo_locations_shipping_rate`  
+- `orpot_woo_locations_shipping_rate`  
   Permite modificar el costo del envío antes de agregarlo al pedido.
 
 ---

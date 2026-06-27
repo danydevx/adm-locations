@@ -115,18 +115,18 @@ class ADMBike_Woo_Locations_Admin {
 	 * @return void
 	 */
 	public function render_admin_page() {
-		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['admbike_no_coverage_message_nonce'] ) ) {
-			if ( ! $this->verify_post_nonce( 'admbike_no_coverage_message' ) ) {
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['orpot_woo_locations_no_coverage_message_nonce'] ) ) {
+			if ( ! $this->verify_post_nonce( 'orpot_woo_locations_no_coverage_message' ) ) {
 				wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
 			}
 
-			$message = isset( $_POST['admbike_no_coverage_message'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['admbike_no_coverage_message'] ) ) : '';
+			$message = isset( $_POST['orpot_woo_locations_no_coverage_message'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['orpot_woo_locations_no_coverage_message'] ) ) : '';
 			update_option( ADMBike_Woo_Locations::OPTION_NO_COVERAGE_MESSAGE, $message );
 
 			$this->redirect_with_message( 'success', urlencode( __( 'Coverage message updated successfully.', 'admbike-woo-locations' ) ), array( 'page' => self::SLUG ) );
 		}
 
-		$plugin = admbike_woo_locations();
+		$plugin = orpot_woo_locations();
 		$states_total = $plugin ? $plugin->states()->count_all() : 0;
 		$states_active = $plugin ? $plugin->states()->count_all( '', 1 ) : 0;
 		$municipalities_total = $plugin ? $plugin->municipalities()->count_all() : 0;
@@ -218,9 +218,9 @@ class ADMBike_Woo_Locations_Admin {
 					<p class="admbike-panel__summary"><?php echo esc_html( $message_preview ); ?></p>
 
 					<form method="post" action="" class="admbike-message-form">
-						<?php wp_nonce_field( 'admbike_no_coverage_message', 'admbike_no_coverage_message_nonce' ); ?>
-						<label for="admbike_no_coverage_message" class="screen-reader-text"><?php echo esc_html( 'Mensaje de cobertura sin envío' ); ?></label>
-						<textarea id="admbike_no_coverage_message" name="admbike_no_coverage_message" rows="6" class="large-text code"><?php echo esc_textarea( $message ); ?></textarea>
+						<?php wp_nonce_field( 'orpot_woo_locations_no_coverage_message', 'orpot_woo_locations_no_coverage_message_nonce' ); ?>
+						<label for="orpot_woo_locations_no_coverage_message" class="screen-reader-text"><?php echo esc_html( 'Mensaje de cobertura sin envío' ); ?></label>
+						<textarea id="orpot_woo_locations_no_coverage_message" name="orpot_woo_locations_no_coverage_message" rows="6" class="large-text code"><?php echo esc_textarea( $message ); ?></textarea>
 						<p class="description"><?php echo esc_html( 'Guarda este texto para reemplazar el mensaje de WooCommerce cuando no haya envío. Déjalo vacío para conservar el mensaje predeterminado.' ); ?></p>
 						<p><button type="submit" class="button button-primary"><?php echo esc_html( 'Guardar mensaje' ); ?></button></p>
 					</form>

@@ -24,7 +24,7 @@ class ADMBike_Woo_Locations_State_Repository extends ADMBike_Woo_Locations_Abstr
 	 * @return string
 	 */
 	protected function get_table_suffix() {
-		return 'admbike_locations_states';
+		return 'orpot_woo_locations_states';
 	}
 
 	/**

@@ -56,7 +56,7 @@ class ADMBike_Woo_Locations_Logger {
 	public static function init() {
 		self::$enabled = defined( 'WP_DEBUG' ) && WP_DEBUG;
 
-		$custom_level = get_option( 'admbike_woo_locations_log_level', '' );
+		$custom_level = get_option( 'orpot_woo_locations_log_level', '' );
 		if ( $custom_level && isset( self::$levels[ $custom_level ] ) ) {
 			self::$min_level = $custom_level;
 		}

@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class ADMBike_Woo_Locations {
 
-	public const OPTION_NO_COVERAGE_MESSAGE = 'admbike_no_coverage_message';
+	public const OPTION_NO_COVERAGE_MESSAGE = 'orpot_woo_locations_no_coverage_message';
 
 	/**
 	 * Repository instances.
@@ -53,7 +53,7 @@ class ADMBike_Woo_Locations {
 		$saved   = $this->get_saved_no_coverage_message();
 		$message = '' !== $saved ? $saved : $default;
 
-		return apply_filters( 'admbike_woo_locations_no_coverage_message', $message );
+		return apply_filters( 'orpot_woo_locations_no_coverage_message', $message );
 	}
 
 	/**
@@ -122,11 +122,11 @@ class ADMBike_Woo_Locations {
 	 * @return array<string, array<string, string>>
 	 */
 	public function limit_woocommerce_states( $states ) {
-		if ( ! is_array( $states ) || ! isset( $states['MX'] ) || ! function_exists( 'admbike_woo_locations' ) ) {
+		if ( ! is_array( $states ) || ! isset( $states['MX'] ) || ! function_exists( 'orpot_woo_locations' ) ) {
 			return $states;
 		}
 
-		$plugin = admbike_woo_locations();
+		$plugin = orpot_woo_locations();
 		if ( ! $plugin instanceof ADMBike_Woo_Locations ) {
 			return $states;
 		}

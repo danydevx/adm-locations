@@ -14,7 +14,7 @@ class ADMBike_Woo_Locations_Checkout {
 	/**
 	 * Session key for location data.
 	 */
-	public const SESSION_KEY = 'admbike_checkout_location';
+	public const SESSION_KEY = 'orpot_woo_locations_checkout_location';
 
 	/**
 	 * Constructor.
@@ -118,7 +118,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'default'  => 'MX',
 		);
 
-		$fields['billing']['admbike_state_id'] = array(
+		$fields['billing']['orpot_woo_locations_state_id'] = array(
 			'label'       => __( 'Estado', 'admbike-woo-locations' ),
 			'required'    => true,
 			'class'        => array( 'form-row-wide', 'admbike-field' ),
@@ -128,7 +128,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'input_class' => array( 'admbike-state-select' ),
 		);
 
-		$fields['billing']['admbike_pickup_toggle'] = array(
+		$fields['billing']['orpot_woo_locations_pickup_toggle'] = array(
 			'label'       => __( 'Ubicaciones de recolección', 'admbike-woo-locations' ),
 			'required'    => false,
 			'class'       => array( 'form-row-wide', 'admbike-field', 'admbike-pickup-toggle' ),
@@ -137,7 +137,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'description' => __( 'Activa esta opción para elegir una ubicación de recolección y rellenar los campos de WooCommerce.', 'admbike-woo-locations' ),
 		);
 
-		$fields['billing']['admbike_municipality_id'] = array(
+		$fields['billing']['orpot_woo_locations_municipality_id'] = array(
 			'label'       => __( 'Municipio / Ciudad', 'admbike-woo-locations' ),
 			'required'    => true,
 			'class'       => array( 'form-row-wide', 'admbike-field', 'admbike-hidden' ),
@@ -147,7 +147,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'input_class' => array( 'admbike-municipality-select' ),
 		);
 
-		$fields['billing']['admbike_postcode_select'] = array(
+		$fields['billing']['orpot_woo_locations_postcode_select'] = array(
 			'label'       => __( 'Código Postal', 'admbike-woo-locations' ),
 			'required'    => true,
 			'class'       => array( 'form-row-wide', 'admbike-field', 'admbike-hidden' ),
@@ -157,7 +157,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'input_class' => array( 'admbike-postcode-select' ),
 		);
 
-		$fields['billing']['admbike_coverage_info'] = array(
+		$fields['billing']['orpot_woo_locations_coverage_info'] = array(
 			'label'       => '',
 			'required'   => false,
 			'class'      => array( 'form-row-wide', 'admbike-coverage-info', 'admbike-hidden' ),
@@ -198,12 +198,12 @@ class ADMBike_Woo_Locations_Checkout {
 	public function save_checkout_posted_data( $data ) {
 		$post = wp_unslash( $_POST );
 
-		if ( ! empty( $post['admbike_state_id'] ) && isset( WC()->session ) && WC()->session ) {
+		if ( ! empty( $post['orpot_woo_locations_state_id'] ) && isset( WC()->session ) && WC()->session ) {
 			$location = array(
-				'state_id'        => absint( $post['admbike_state_id'] ),
-				'municipality_id' => ! empty( $post['admbike_municipality_id'] ) ? absint( $post['admbike_municipality_id'] ) : 0,
-				'postcode'        => isset( $post['admbike_postcode_select'] ) ? sanitize_text_field( (string) $post['admbike_postcode_select'] ) : '',
-				'postcode_raw'    => isset( $post['admbike_postcode_select'] ) ? sanitize_text_field( (string) $post['admbike_postcode_select'] ) : '',
+				'state_id'        => absint( $post['orpot_woo_locations_state_id'] ),
+				'municipality_id' => ! empty( $post['orpot_woo_locations_municipality_id'] ) ? absint( $post['orpot_woo_locations_municipality_id'] ) : 0,
+				'postcode'        => isset( $post['orpot_woo_locations_postcode_select'] ) ? sanitize_text_field( (string) $post['orpot_woo_locations_postcode_select'] ) : '',
+				'postcode_raw'    => isset( $post['orpot_woo_locations_postcode_select'] ) ? sanitize_text_field( (string) $post['orpot_woo_locations_postcode_select'] ) : '',
 				'city'            => isset( $post['billing_city'] ) ? sanitize_text_field( (string) $post['billing_city'] ) : ( isset( $post['shipping_city'] ) ? sanitize_text_field( (string) $post['shipping_city'] ) : '' ),
 			);
 
@@ -317,7 +317,7 @@ class ADMBike_Woo_Locations_Checkout {
 			$message = $this->get_no_coverage_message();
 
 			if ( is_object( $errors ) && method_exists( $errors, 'add' ) ) {
-				$errors->add( 'admbike_no_coverage', $message );
+				$errors->add( 'orpot_woo_locations_no_coverage', $message );
 			}
 
 			wc_add_notice( $message, 'error' );
@@ -347,7 +347,7 @@ class ADMBike_Woo_Locations_Checkout {
 		}
 
 		if ( is_object( $errors ) && method_exists( $errors, 'add' ) ) {
-			$errors->add( 'admbike_no_coverage', $this->get_no_coverage_message() );
+			$errors->add( 'orpot_woo_locations_no_coverage', $this->get_no_coverage_message() );
 		}
 	}
 
@@ -413,17 +413,17 @@ class ADMBike_Woo_Locations_Checkout {
 		$muni     = ! empty( $location['municipality_id'] ) ? $muni_repo->get_by_id( $location['municipality_id'] ) : null;
 		$postcode = isset( $location['postcode'] ) ? sanitize_text_field( (string) $location['postcode'] ) : '';
 
-		$order->update_meta_data( '_admbike_state_id', isset( $location['state_id'] ) ? absint( $location['state_id'] ) : 0 );
-		$order->update_meta_data( '_admbike_state_name', $state ? $state['name'] : '' );
-		$order->update_meta_data( '_admbike_state_code', $state ? $state['code'] : '' );
-		$order->update_meta_data( '_admbike_municipality_id', isset( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0 );
-		$order->update_meta_data( '_admbike_municipality_name', $muni ? $muni['name'] : '' );
-		$order->update_meta_data( '_admbike_postcode', $postcode );
+		$order->update_meta_data( '_orpot_woo_locations_state_id', isset( $location['state_id'] ) ? absint( $location['state_id'] ) : 0 );
+		$order->update_meta_data( '_orpot_woo_locations_state_name', $state ? $state['name'] : '' );
+		$order->update_meta_data( '_orpot_woo_locations_state_code', $state ? $state['code'] : '' );
+		$order->update_meta_data( '_orpot_woo_locations_municipality_id', isset( $location['municipality_id'] ) ? absint( $location['municipality_id'] ) : 0 );
+		$order->update_meta_data( '_orpot_woo_locations_municipality_name', $muni ? $muni['name'] : '' );
+		$order->update_meta_data( '_orpot_woo_locations_postcode', $postcode );
 
 		if ( ! empty( $postcode ) ) {
 			$pc_rows = $pc_repo->get_by_postcode( $postcode );
 			if ( ! empty( $pc_rows ) ) {
-				$order->update_meta_data( '_admbike_municipality_id', $pc_rows[0]['municipality_id'] );
+				$order->update_meta_data( '_orpot_woo_locations_municipality_id', $pc_rows[0]['municipality_id'] );
 			}
 		}
 
@@ -516,28 +516,28 @@ class ADMBike_Woo_Locations_Checkout {
 		$post = wp_unslash( $_POST );
 
 		$state_id = 0;
-		if ( ! empty( $data['admbike_state_id'] ) ) {
-			$state_id = absint( $data['admbike_state_id'] );
-		} elseif ( ! empty( $post['admbike_state_id'] ) ) {
-			$state_id = absint( $post['admbike_state_id'] );
+		if ( ! empty( $data['orpot_woo_locations_state_id'] ) ) {
+			$state_id = absint( $data['orpot_woo_locations_state_id'] );
+		} elseif ( ! empty( $post['orpot_woo_locations_state_id'] ) ) {
+			$state_id = absint( $post['orpot_woo_locations_state_id'] );
 		} elseif ( ! empty( $session_location['state_id'] ) ) {
 			$state_id = absint( $session_location['state_id'] );
 		}
 
 		$municipality_id = 0;
-		if ( ! empty( $data['admbike_municipality_id'] ) ) {
-			$municipality_id = absint( $data['admbike_municipality_id'] );
-		} elseif ( ! empty( $post['admbike_municipality_id'] ) ) {
-			$municipality_id = absint( $post['admbike_municipality_id'] );
+		if ( ! empty( $data['orpot_woo_locations_municipality_id'] ) ) {
+			$municipality_id = absint( $data['orpot_woo_locations_municipality_id'] );
+		} elseif ( ! empty( $post['orpot_woo_locations_municipality_id'] ) ) {
+			$municipality_id = absint( $post['orpot_woo_locations_municipality_id'] );
 		} elseif ( ! empty( $session_location['municipality_id'] ) ) {
 			$municipality_id = absint( $session_location['municipality_id'] );
 		}
 
 		$postcode = '';
-		if ( ! empty( $data['admbike_postcode_select'] ) ) {
-			$postcode = sanitize_text_field( (string) $data['admbike_postcode_select'] );
-		} elseif ( ! empty( $post['admbike_postcode_select'] ) ) {
-			$postcode = sanitize_text_field( (string) $post['admbike_postcode_select'] );
+		if ( ! empty( $data['orpot_woo_locations_postcode_select'] ) ) {
+			$postcode = sanitize_text_field( (string) $data['orpot_woo_locations_postcode_select'] );
+		} elseif ( ! empty( $post['orpot_woo_locations_postcode_select'] ) ) {
+			$postcode = sanitize_text_field( (string) $post['orpot_woo_locations_postcode_select'] );
 		} elseif ( ! empty( $session_location['postcode'] ) ) {
 			$postcode = sanitize_text_field( (string) $session_location['postcode'] );
 		}
@@ -658,13 +658,13 @@ class ADMBike_Woo_Locations_Checkout {
 	 * @return bool
 	 */
 	protected function is_pickup_selected( array $data = array() ) {
-		if ( ! empty( $data['admbike_pickup_toggle'] ) ) {
+		if ( ! empty( $data['orpot_woo_locations_pickup_toggle'] ) ) {
 			return true;
 		}
 
 		$post = wp_unslash( $_POST );
 
-		if ( ! empty( $post['admbike_pickup_toggle'] ) ) {
+		if ( ! empty( $post['orpot_woo_locations_pickup_toggle'] ) ) {
 			return true;
 		}
 
@@ -696,7 +696,7 @@ class ADMBike_Woo_Locations_Checkout {
 	 * @return string
 	 */
 	protected function get_no_coverage_message() {
-		return admbike_woo_locations()->get_no_coverage_message();
+		return orpot_woo_locations()->get_no_coverage_message();
 	}
 
 	/**
@@ -730,12 +730,12 @@ class ADMBike_Woo_Locations_Checkout {
 			'admbikeCheckout',
 			array(
 				'restUrl'    => rest_url( 'admbike-woo-locations/v1/' ),
-				'nonce'      => wp_create_nonce( 'admbike_checkout_location' ),
+				'nonce'      => wp_create_nonce( 'orpot_woo_locations_checkout_location' ),
 				'i18n'       => array(
 					'selectState'       => __( 'Selecciona un estado…', 'admbike-woo-locations' ),
 					'selectMunicipality'=> __( 'Selecciona un municipio…', 'admbike-woo-locations' ),
 					'selectPostcode'    => __( 'Selecciona un código postal…', 'admbike-woo-locations' ),
-					'noCoverage'        => admbike_woo_locations()->get_no_coverage_message(),
+					'noCoverage'        => orpot_woo_locations()->get_no_coverage_message(),
 					'loading'           => __( 'Cargando…', 'admbike-woo-locations' ),
 				),
 			)
@@ -752,9 +752,9 @@ class ADMBike_Woo_Locations_Checkout {
 			return;
 		}
 
-		$states = admbike_woo_locations()->get_frontend_states();
-		$munis  = admbike_woo_locations()->get_frontend_municipalities();
-		$pcs    = admbike_woo_locations()->get_frontend_postcodes();
+		$states = orpot_woo_locations()->get_frontend_states();
+		$munis  = orpot_woo_locations()->get_frontend_municipalities();
+		$pcs    = orpot_woo_locations()->get_frontend_postcodes();
 
 		$states_data = array_map(
 			function ( $s ) {
@@ -781,7 +781,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'<script id="admbike-location-data" type="application/json">%s</script>',
 			wp_json_encode(
 				array(
-					'nonce' => wp_create_nonce( 'admbike_checkout_location' ),
+					'nonce' => wp_create_nonce( 'orpot_woo_locations_checkout_location' ),
 					'states' => $states_data,
 					'municipalities' => $munis_data,
 					'postcodes' => $pcs_data,

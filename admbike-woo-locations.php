@@ -39,7 +39,7 @@ require_once ADMBIKE_WOO_LOCATIONS_PATH . 'admin/class-admbike-woo-locations-adm
 register_activation_hook( __FILE__, array( 'ADMBike_Woo_Locations_Installer', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'ADMBike_Woo_Locations_Installer', 'deactivate' ) );
 
-function admbike_woo_locations() {
+function orpot_woo_locations() {
 	static $plugin = null;
 
 	if ( null === $plugin ) {
@@ -49,16 +49,16 @@ function admbike_woo_locations() {
 	return $plugin;
 }
 
-admbike_woo_locations()->run();
+orpot_woo_locations()->run();
 
 ADMBike_Woo_Locations_Logger::init();
 
 if ( is_admin() ) {
-	$GLOBALS['admbike_woo_locations_admin'] = new ADMBike_Woo_Locations_Admin();
+	$GLOBALS['orpot_woo_locations_admin'] = new ADMBike_Woo_Locations_Admin();
 }
 
-if ( ! isset( $GLOBALS['admbike_woo_locations_shipping_zone_sync'] ) ) {
-	$GLOBALS['admbike_woo_locations_shipping_zone_sync'] = new ADMBike_Woo_Locations_Shipping_Zone_Sync();
+if ( ! isset( $GLOBALS['orpot_woo_locations_shipping_zone_sync'] ) ) {
+	$GLOBALS['orpot_woo_locations_shipping_zone_sync'] = new ADMBike_Woo_Locations_Shipping_Zone_Sync();
 }
 
 /**
@@ -66,8 +66,8 @@ if ( ! isset( $GLOBALS['admbike_woo_locations_shipping_zone_sync'] ) ) {
  *
  * @return ADMBike_Woo_Locations_Admin|null
  */
-function admbike_woo_locations_admin() {
-	return $GLOBALS['admbike_woo_locations_admin'] ?? null;
+function orpot_woo_locations_admin() {
+	return $GLOBALS['orpot_woo_locations_admin'] ?? null;
 }
 
 /**
@@ -75,6 +75,6 @@ function admbike_woo_locations_admin() {
  *
  * @return ADMBike_Woo_Locations_Shipping_Zone_Sync|null
  */
-function admbike_woo_locations_shipping_zone_sync() {
-	return $GLOBALS['admbike_woo_locations_shipping_zone_sync'] ?? null;
+function orpot_woo_locations_shipping_zone_sync() {
+	return $GLOBALS['orpot_woo_locations_shipping_zone_sync'] ?? null;
 }

@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$admin = admbike_woo_locations_admin();
+$admin = orpot_woo_locations_admin();
 
 $states_repo = new ADMBike_Woo_Locations_State_Repository();
 
@@ -21,19 +21,19 @@ if ( 'add' === $action || 'edit' === $action ) {
 	if ( 'edit' === $action && $id > 0 ) {
 		$item = $states_repo->get_by_id( $id );
 		if ( ! $item ) {
-			wp_die( esc_html__( 'State not found.', 'admbike-woo-locations' ) );
+			wp_die( esc_html__( 'No se encontró el estado.', 'admbike-woo-locations' ) );
 		}
 	}
 	?>
 <div class="wrap">
 	<h1 class="wp-heading-inline"><?php echo esc_html( 'edit' === $action ? __( 'Edit State', 'admbike-woo-locations' ) : __( 'Add State', 'admbike-woo-locations' ) ); ?></h1>
-	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG ) ); ?>" class="page-title-action"><?php esc_html_e( 'Back to list', 'admbike-woo-locations' ); ?></a>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG ) ); ?>" class="page-title-action"><?php esc_html_e( 'Volver al listado', 'admbike-woo-locations' ); ?></a>
 	<hr class="wp-header-end">
 
 	<?php
-	if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['admbike_state_nonce'] ) ) {
-		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['admbike_state_nonce'] ) ), 'admbike_save_state' ) || ! current_user_can( ADMBike_Woo_Locations_Admin::CAPABILITY ) ) {
-			wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( 'POST' === $_SERVER['REQUEST_METHOD'] && isset( $_POST['orpot_woo_locations_state_nonce'] ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['orpot_woo_locations_state_nonce'] ) ), 'orpot_woo_locations_save_state' ) || ! current_user_can( ADMBike_Woo_Locations_Admin::CAPABILITY ) ) {
+			wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 		}
 
 		$post = wp_unslash( $_POST );
@@ -48,19 +48,19 @@ if ( 'add' === $action || 'edit' === $action ) {
 		$active = isset( $post['is_active'] ) ? (int) (bool) $post['is_active'] : 0;
 
 		if ( empty( $code ) || empty( $name ) ) {
-			$error_msg = __( 'Code and Name are required.', 'admbike-woo-locations' );
+			$error_msg = __( 'Se requieren el código y el nombre.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
 			return;
 		}
 
 		if ( '' !== $coverage_mode && 'range' === $coverage_mode && ( '' === $postcode_from || '' === $postcode_to ) ) {
-			$error_msg = __( 'Range coverage requires both start and end postal codes.', 'admbike-woo-locations' );
+			$error_msg = __( 'La cobertura por rango requiere un código postal inicial y uno final.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
 			return;
 		}
 
 		if ( '' !== $coverage_mode && 'list' === $coverage_mode && '' === trim( $postcode_list ) ) {
-			$error_msg = __( 'List coverage requires at least one postal code.', 'admbike-woo-locations' );
+			$error_msg = __( 'La cobertura por lista requiere al menos un código postal.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
 			return;
 		}
@@ -81,14 +81,14 @@ if ( 'add' === $action || 'edit' === $action ) {
 			: ( 'list' === $coverage_mode ? $states_repo->normalize_postcode_list( $postcode_list ) : '' );
 
 		if ( '' !== $coverage_mode && '' === $postcode_coverage ) {
-			$error_msg = __( 'Postal coverage could not be normalized. Please enter valid 5-digit postcodes.', 'admbike-woo-locations' );
+			$error_msg = __( 'No se pudo normalizar la cobertura postal. Ingresa códigos postales válidos de 5 dígitos.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
 			return;
 		}
 
 		$existing_code = $states_repo->get_by_code( $code );
 		if ( $existing_code && ( 'add' === $action || ( 'edit' === $action && (int) $existing_code['id'] !== $id ) ) ) {
-			$error_msg = __( 'A state with this code already exists.', 'admbike-woo-locations' );
+			$error_msg = __( 'Ya existe un estado con este código.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
 			return;
 		}
@@ -104,16 +104,16 @@ if ( 'add' === $action || 'edit' === $action ) {
 		if ( 'add' === $action ) {
 			$result = $states_repo->create( $data );
 			if ( $result ) {
-				$admin->redirect_with_message( 'success', urlencode( __( 'State created successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
+				$admin->redirect_with_message( 'success', urlencode( __( 'Estado creado correctamente.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
 			} else {
-				$error_msg = __( 'Failed to create state.', 'admbike-woo-locations' );
+				$error_msg = __( 'No se pudo crear el estado.', 'admbike-woo-locations' );
 			}
 		} else {
 			$result = $states_repo->update( $id, $data );
 			if ( $result ) {
-				$admin->redirect_with_message( 'success', urlencode( __( 'State updated successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
+				$admin->redirect_with_message( 'success', urlencode( __( 'Estado actualizado correctamente.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
 			} else {
-				$error_msg = __( 'Failed to update state.', 'admbike-woo-locations' );
+				$error_msg = __( 'No se pudo actualizar el estado.', 'admbike-woo-locations' );
 			}
 		}
 
@@ -126,18 +126,18 @@ if ( 'add' === $action || 'edit' === $action ) {
 }
 
 if ( 'delete' === $action ) {
-	if ( ! $admin->verify_nonce( 'admbike_delete_state' ) ) {
-		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( ! $admin->verify_nonce( 'orpot_woo_locations_delete_state' ) ) {
+		wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 	}
 
 	$result = $states_repo->delete( $id );
-	$admin->redirect_with_message( $result ? 'success' : 'error', urlencode( $result ? __( 'State deleted.', 'admbike-woo-locations' ) : __( 'Failed to delete state.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
+	$admin->redirect_with_message( $result ? 'success' : 'error', urlencode( $result ? __( 'Estado eliminado.', 'admbike-woo-locations' ) : __( 'No se pudo eliminar el estado.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
 	return;
 }
 
 if ( 'toggle' === $action ) {
-	if ( ! $admin->verify_nonce( 'admbike_toggle_state' ) ) {
-		wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
+	if ( ! $admin->verify_nonce( 'orpot_woo_locations_toggle_state' ) ) {
+		wp_die( esc_html__( 'Falló la verificación de seguridad.', 'admbike-woo-locations' ) );
 	}
 
 	$item = $states_repo->get_by_id( $id );
@@ -145,7 +145,7 @@ if ( 'toggle' === $action ) {
 		$states_repo->update( $id, array( 'is_active' => $item['is_active'] ? 0 : 1 ) );
 	}
 
-	$admin->redirect_with_message( 'success', urlencode( __( 'Status updated.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
+	$admin->redirect_with_message( 'success', urlencode( __( 'Estado actualizado.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );
 	return;
 }
 
@@ -212,17 +212,17 @@ $woocommerce_mx_states = ADMBike_Woo_Locations_Admin::get_woocommerce_mx_states(
 				foreach ( $items as $item ) :
 					$edit_url   = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=edit&id=' . absint( $item['id'] ) ),
-						'admbike_edit_state_' . $item['id'],
+						'orpot_woo_locations_edit_state_' . $item['id'],
 						'_wpnonce'
 					);
 					$delete_url = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=delete&id=' . absint( $item['id'] ) ),
-						'admbike_delete_state',
+						'orpot_woo_locations_delete_state',
 						'_wpnonce'
 					);
 					$toggle_url = wp_nonce_url(
 						admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=toggle&id=' . absint( $item['id'] ) ),
-						'admbike_toggle_state',
+						'orpot_woo_locations_toggle_state',
 						'_wpnonce'
 					);
 					?>

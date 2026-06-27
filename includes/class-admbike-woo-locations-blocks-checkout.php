@@ -72,7 +72,7 @@ class ADMBike_Woo_Locations_Blocks_Checkout {
 					'name' => (string) $state['name'],
 				);
 			},
-			admbike_woo_locations()->get_frontend_states()
+			orpot_woo_locations()->get_frontend_states()
 		);
 
 		$municipalities = array_map(
@@ -84,13 +84,13 @@ class ADMBike_Woo_Locations_Blocks_Checkout {
 					'normalized_name'  => isset( $municipality['normalized_name'] ) ? (string) $municipality['normalized_name'] : '',
 				);
 			},
-			admbike_woo_locations()->get_frontend_municipalities()
+			orpot_woo_locations()->get_frontend_municipalities()
 		);
 
 		return array(
 			'restUrl'                   => rest_url( 'admbike-woo-locations/v1/' ),
-			'nonce'                    => wp_create_nonce( 'admbike_checkout_location' ),
-			'frontendNoCoverageMessage' => admbike_woo_locations()->get_no_coverage_message(),
+			'nonce'                    => wp_create_nonce( 'orpot_woo_locations_checkout_location' ),
+			'frontendNoCoverageMessage' => orpot_woo_locations()->get_no_coverage_message(),
 			'states'                    => $states,
 			'municipalities'            => $municipalities,
 			'i18n'                      => array(
