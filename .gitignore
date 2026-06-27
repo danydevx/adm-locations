@@ -30,3 +30,8 @@ wp-config.php
 # Env
 .env
 .env.*
+
+
+AGENTS.md
+PHASES.md
+readme.txt
