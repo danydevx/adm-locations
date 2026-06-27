@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       ADM Bike Woo Locations
+ * Plugin Name:       Orpot Mexico Woo Reglas
  * Plugin URI:        https://admbike.com/
  * Description:       WooCommerce shipping coverage manager by state, municipality and postal code.
  * Version:           0.2.1
