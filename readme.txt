@@ -1,4 +1,4 @@
-=== ADM Bike Woo Locations ===
+=== Orpot Mexico Woo Reglas ===
 Contributors: Orpot
 Author: Daniel Lopez
 Author URI: https://orpot.com
@@ -14,7 +14,7 @@ Advanced WooCommerce shipping coverage management by State, Municipality and Pos
 
 == Description ==
 
-ADM Bike Woo Locations lets you define shipping coverage using a hierarchy of State -> Municipality -> Postal Code.
+Orpot Mexico Woo Reglas lets you define shipping coverage using a hierarchy of State -> Municipality -> Postal Code.
 
 Features include:
 

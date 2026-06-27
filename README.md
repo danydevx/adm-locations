@@ -1,4 +1,4 @@
-# ADM Bike Woo Locations
+# Orpot Mexico Woo Reglas
 
 **Contribuyentes:** admbike  
 **Etiquetas:** woocommerce, envíos, ubicaciones, estados, municipios, códigos postales  
@@ -14,7 +14,7 @@ Administración avanzada de cobertura de envíos para WooCommerce mediante Estad
 
 # Descripción
 
-ADM Bike Woo Locations permite definir áreas de cobertura para envíos utilizando una estructura jerárquica:
+Orpot Mexico Woo Reglas permite definir áreas de cobertura para envíos utilizando una estructura jerárquica:
 
 **Estado → Municipio → Código Postal**
 
