@@ -19,13 +19,7 @@ Thumbs.db
 /dist/
 /build/
 
-# OpenCode
-.opencode/cache/
-.opencode/tmp/
-.opencode/logs/
-
-# AI / assistant files
-.opencode/
+# Generated markdown
 *.ai.md
 AI*.md
 ai*.md
