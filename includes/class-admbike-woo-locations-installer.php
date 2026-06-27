@@ -32,6 +32,14 @@ class ADMBike_Woo_Locations_Installer {
 	}
 
 	/**
+	 * Run deactivation tasks.
+	 *
+	 * @return void
+	 */
+	public static function deactivate() {
+	}
+
+	/**
 	 * Run uninstall cleanup.
 	 *
 	 * @return void

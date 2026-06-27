@@ -89,6 +89,7 @@ class ADMBike_Woo_Locations_Blocks_Checkout {
 
 		return array(
 			'restUrl'                   => rest_url( 'admbike-woo-locations/v1/' ),
+			'nonce'                    => wp_create_nonce( 'admbike_checkout_location' ),
 			'frontendNoCoverageMessage' => admbike_woo_locations()->get_no_coverage_message(),
 			'states'                    => $states,
 			'municipalities'            => $municipalities,

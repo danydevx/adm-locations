@@ -4,6 +4,7 @@
 
 	var config = window.admbikeCheckout || {};
 	var restUrl = typeof config.restUrl === 'string' ? config.restUrl : '';
+	var nonce = typeof config.nonce === 'string' ? config.nonce : '';
 	var i18n = config.i18n || {};
 	var states = [];
 	var municipalities = [];
@@ -99,7 +100,8 @@
 			{
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json'
+					'Content-Type': 'application/json',
+					'X-ADMBIKE-NONCE': nonce
 				},
 				credentials: 'same-origin',
 				body: JSON.stringify( payload )

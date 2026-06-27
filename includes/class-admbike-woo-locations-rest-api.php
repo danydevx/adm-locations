@@ -196,7 +196,7 @@ class ADMBike_Woo_Locations_REST_API {
 				array(
 					'methods'             => 'POST',
 					'callback'            => array( $this, 'set_checkout_location' ),
-					'permission_callback' => '__return_true',
+					'permission_callback' => array( $this, 'can_set_checkout_location' ),
 					'args'                => array(
 						'state_id' => array(
 							'description' => 'State ID selected in checkout.',
@@ -227,6 +227,18 @@ class ADMBike_Woo_Locations_REST_API {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Check whether the checkout location can be updated.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool
+	 */
+	public function can_set_checkout_location( $request ) {
+		$nonce = $request instanceof WP_REST_Request ? $request->get_header( 'x-admbike-nonce' ) : '';
+
+		return is_string( $nonce ) && '' !== $nonce && wp_verify_nonce( sanitize_text_field( $nonce ), 'admbike_checkout_location' );
 	}
 
 	/**

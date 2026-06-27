@@ -4,6 +4,7 @@
 	var blocksData = window.admbikeWooLocationsBlocks || {};
 	var settings = blocksData;
 	var restUrl = settings.restUrl || (window.location.origin.replace(/\/$/, '') + '/wp-json/admbike-woo-locations/v1/');
+	var nonce = settings.nonce || '';
 	var noCoverageMessage = settings.frontendNoCoverageMessage || 'No disponible en tu zona';
 	var states = Array.isArray(settings.states) ? settings.states : [];
 	var municipalities = Array.isArray(settings.municipalities) ? settings.municipalities : [];
@@ -399,6 +400,7 @@
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
+				'X-ADMBIKE-NONCE': nonce,
 				Accept: 'application/json'
 			},
 			body: JSON.stringify(payload)

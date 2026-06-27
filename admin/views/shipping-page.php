@@ -37,24 +37,26 @@ if ( 'add' === $action || 'edit' === $action ) {
 			wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
 		}
 
-		$match_type = isset( $_POST['match_type'] ) ? sanitize_key( $_POST['match_type'] ) : '';
-		$rule_type  = isset( $_POST['rule_type'] ) ? sanitize_key( $_POST['rule_type'] ) : '';
-		$rule_title = isset( $_POST['rule_title'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['rule_title'] ) ) : '';
-		$display_title = isset( $_POST['display_title'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['display_title'] ) ) : '';
-		$customer_message = isset( $_POST['customer_message'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['customer_message'] ) ) : '';
-		$state_id   = isset( $_POST['state_id'] ) ? absint( $_POST['state_id'] ) : 0;
-		$muni_id    = isset( $_POST['municipality_id'] ) ? absint( $_POST['municipality_id'] ) : 0;
+		$post = wp_unslash( $_POST );
+		$action = isset( $post['_action'] ) ? sanitize_key( (string) $post['_action'] ) : '';
+		$match_type = isset( $post['match_type'] ) ? sanitize_key( (string) $post['match_type'] ) : '';
+		$rule_type  = isset( $post['rule_type'] ) ? sanitize_key( (string) $post['rule_type'] ) : '';
+		$rule_title = isset( $post['rule_title'] ) ? sanitize_text_field( (string) $post['rule_title'] ) : '';
+		$display_title = isset( $post['display_title'] ) ? sanitize_text_field( (string) $post['display_title'] ) : '';
+		$customer_message = isset( $post['customer_message'] ) ? sanitize_textarea_field( (string) $post['customer_message'] ) : '';
+		$state_id   = isset( $post['state_id'] ) ? absint( $post['state_id'] ) : 0;
+		$muni_id    = isset( $post['municipality_id'] ) ? absint( $post['municipality_id'] ) : 0;
 		$pc_id      = 0;
-		$pc_code    = isset( $_POST['postcode_code'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_code'] ) : '';
+		$pc_code    = isset( $post['postcode_code'] ) ? preg_replace( '/[^0-9]/', '', (string) $post['postcode_code'] ) : '';
 		$pc_code    = '' !== $pc_code ? substr( (string) $pc_code, 0, 5 ) : '';
 		$pc_lookup   = null;
-		$pc_from     = isset( $_POST['postcode_from'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $_POST['postcode_from'] ) : '';
-		$pc_to       = isset( $_POST['postcode_to'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $_POST['postcode_to'] ) : '';
-		$cost       = isset( $_POST['shipping_cost'] ) ? (float) $_POST['shipping_cost'] : 0;
-		$currency   = isset( $_POST['currency_code'] ) ? strtoupper( sanitize_text_field( (string) $_POST['currency_code'] ) ) : 'MXN';
-		$priority   = isset( $_POST['priority'] ) ? absint( $_POST['priority'] ) : 100;
-		$active     = isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 0;
-		$notes      = isset( $_POST['notes'] ) ? sanitize_textarea_field( (string) $_POST['notes'] ) : '';
+		$pc_from     = isset( $post['postcode_from'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $post['postcode_from'] ) : '';
+		$pc_to       = isset( $post['postcode_to'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $post['postcode_to'] ) : '';
+		$cost       = isset( $post['shipping_cost'] ) ? (float) $post['shipping_cost'] : 0;
+		$currency   = isset( $post['currency_code'] ) ? strtoupper( sanitize_text_field( (string) $post['currency_code'] ) ) : 'MXN';
+		$priority   = isset( $post['priority'] ) ? absint( $post['priority'] ) : 100;
+		$active     = isset( $post['is_active'] ) ? (int) (bool) $post['is_active'] : 0;
+		$notes      = isset( $post['notes'] ) ? sanitize_textarea_field( (string) $post['notes'] ) : '';
 
 		$valid_match_types = array(
 			ADMBike_Woo_Locations_Shipping_Rule_Repository::MATCH_STATE,
@@ -136,7 +138,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 			'notes'         => $notes,
 		);
 
-		if ( 'add' === $_POST['_action'] ) {
+		if ( 'add' === $action ) {
 			$result = $rules_repo->create( $data );
 			if ( $result ) {
 				if ( $sync instanceof ADMBike_Woo_Locations_Shipping_Zone_Sync ) {

@@ -15,26 +15,27 @@ $error_msg = isset( $error_msg ) ? $error_msg : '';
 $is_edit   = ( null !== $item && ! empty( $item ) );
 $pc_repo_local = new ADMBike_Woo_Locations_Postcode_Repository();
 
-$match_type = $is_edit ? ( $item['match_type'] ?? '' ) : ( isset( $_POST['match_type'] ) ? sanitize_key( $_POST['match_type'] ) : '' );
-$rule_type  = $is_edit ? ( $item['rule_type'] ?? '' ) : ( isset( $_POST['rule_type'] ) ? sanitize_key( $_POST['rule_type'] ) : '' );
+$post = wp_unslash( $_POST );
+$match_type = $is_edit ? ( $item['match_type'] ?? '' ) : ( isset( $post['match_type'] ) ? sanitize_key( (string) $post['match_type'] ) : '' );
+$rule_type  = $is_edit ? ( $item['rule_type'] ?? '' ) : ( isset( $post['rule_type'] ) ? sanitize_key( (string) $post['rule_type'] ) : '' );
 
-$selected_state_id        = $is_edit ? (int) ( $item['state_id'] ?? 0 ) : ( isset( $_POST['state_id'] ) ? absint( $_POST['state_id'] ) : 0 );
-$selected_municipality_id = $is_edit ? (int) ( $item['municipality_id'] ?? 0 ) : ( isset( $_POST['municipality_id'] ) ? absint( $_POST['municipality_id'] ) : 0 );
-$selected_rule_title      = $is_edit ? (string) ( $item['rule_title'] ?? '' ) : ( isset( $_POST['rule_title'] ) ? sanitize_text_field( (string) $_POST['rule_title'] ) : '' );
+$selected_state_id        = $is_edit ? (int) ( $item['state_id'] ?? 0 ) : ( isset( $post['state_id'] ) ? absint( $post['state_id'] ) : 0 );
+$selected_municipality_id = $is_edit ? (int) ( $item['municipality_id'] ?? 0 ) : ( isset( $post['municipality_id'] ) ? absint( $post['municipality_id'] ) : 0 );
+$selected_rule_title      = $is_edit ? (string) ( $item['rule_title'] ?? '' ) : ( isset( $post['rule_title'] ) ? sanitize_text_field( (string) $post['rule_title'] ) : '' );
 $selected_rule_title      = '' !== $selected_rule_title ? $selected_rule_title : ( $is_edit ? (string) ( $item['display_title'] ?? '' ) : '' );
-$selected_postcode_code   = $is_edit ? (string) ( $item['postcode_code'] ?? '' ) : ( isset( $_POST['postcode_code'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_code'] ) : '' );
+$selected_postcode_code   = $is_edit ? (string) ( $item['postcode_code'] ?? '' ) : ( isset( $post['postcode_code'] ) ? preg_replace( '/[^0-9]/', '', (string) $post['postcode_code'] ) : '' );
 $selected_postcode_code   = '' !== $selected_postcode_code ? substr( (string) $selected_postcode_code, 0, 5 ) : '';
 $selected_postcode_row     = $is_edit && ! empty( $item['postcode_id'] ) ? $pc_repo_local->get_by_id( (int) $item['postcode_id'] ) : null;
 $selected_postcode_code   = '' !== $selected_postcode_code ? $selected_postcode_code : ( is_array( $selected_postcode_row ) && ! empty( $selected_postcode_row['postcode'] ) ? (string) $selected_postcode_row['postcode'] : '' );
-$selected_postcode_from   = $is_edit ? ( $item['postcode_from'] ?? '' ) : ( isset( $_POST['postcode_from'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $_POST['postcode_from'] ) : '' );
-$selected_postcode_to     = $is_edit ? ( $item['postcode_to'] ?? '' ) : ( isset( $_POST['postcode_to'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $_POST['postcode_to'] ) : '' );
-$selected_cost            = $is_edit ? ( $item['shipping_cost'] ?? 0 ) : ( isset( $_POST['shipping_cost'] ) ? (float) $_POST['shipping_cost'] : 0 );
-$selected_currency       = $is_edit ? ( $item['currency_code'] ?? 'MXN' ) : ( isset( $_POST['currency_code'] ) ? sanitize_text_field( (string) $_POST['currency_code'] ) : 'MXN' );
-$selected_priority       = $is_edit ? ( $item['priority'] ?? 100 ) : ( isset( $_POST['priority'] ) ? absint( $_POST['priority'] ) : 100 );
-$selected_display_title   = $is_edit ? ( $item['display_title'] ?? '' ) : ( isset( $_POST['display_title'] ) ? sanitize_text_field( (string) $_POST['display_title'] ) : '' );
-$selected_customer_message = $is_edit ? ( $item['customer_message'] ?? '' ) : ( isset( $_POST['customer_message'] ) ? sanitize_textarea_field( (string) $_POST['customer_message'] ) : '' );
-$selected_notes          = $is_edit ? ( $item['notes'] ?? '' ) : ( isset( $_POST['notes'] ) ? sanitize_textarea_field( (string) $_POST['notes'] ) : '' );
-$selected_active         = $is_edit ? (int) ( $item['is_active'] ?? 1 ) : ( isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 1 );
+$selected_postcode_from   = $is_edit ? ( $item['postcode_from'] ?? '' ) : ( isset( $post['postcode_from'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $post['postcode_from'] ) : '' );
+$selected_postcode_to     = $is_edit ? ( $item['postcode_to'] ?? '' ) : ( isset( $post['postcode_to'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $post['postcode_to'] ) : '' );
+$selected_cost            = $is_edit ? ( $item['shipping_cost'] ?? 0 ) : ( isset( $post['shipping_cost'] ) ? (float) $post['shipping_cost'] : 0 );
+$selected_currency       = $is_edit ? ( $item['currency_code'] ?? 'MXN' ) : ( isset( $post['currency_code'] ) ? sanitize_text_field( (string) $post['currency_code'] ) : 'MXN' );
+$selected_priority       = $is_edit ? ( $item['priority'] ?? 100 ) : ( isset( $post['priority'] ) ? absint( $post['priority'] ) : 100 );
+$selected_display_title   = $is_edit ? ( $item['display_title'] ?? '' ) : ( isset( $post['display_title'] ) ? sanitize_text_field( (string) $post['display_title'] ) : '' );
+$selected_customer_message = $is_edit ? ( $item['customer_message'] ?? '' ) : ( isset( $post['customer_message'] ) ? sanitize_textarea_field( (string) $post['customer_message'] ) : '' );
+$selected_notes          = $is_edit ? ( $item['notes'] ?? '' ) : ( isset( $post['notes'] ) ? sanitize_textarea_field( (string) $post['notes'] ) : '' );
+$selected_active         = $is_edit ? (int) ( $item['is_active'] ?? 1 ) : ( isset( $post['is_active'] ) ? (int) (bool) $post['is_active'] : 1 );
 ?>
 <?php if ( $error_msg ) : ?>
 	<div class="notice notice-error"><p><?php echo esc_html( $error_msg ); ?></p></div>

@@ -196,13 +196,15 @@ class ADMBike_Woo_Locations_Checkout {
 	 * @return array<string, mixed>
 	 */
 	public function save_checkout_posted_data( $data ) {
-		if ( ! empty( $_POST['admbike_state_id'] ) && isset( WC()->session ) && WC()->session ) {
+		$post = wp_unslash( $_POST );
+
+		if ( ! empty( $post['admbike_state_id'] ) && isset( WC()->session ) && WC()->session ) {
 			$location = array(
-				'state_id'        => absint( $_POST['admbike_state_id'] ),
-				'municipality_id' => ! empty( $_POST['admbike_municipality_id'] ) ? absint( $_POST['admbike_municipality_id'] ) : 0,
-				'postcode'        => isset( $_POST['admbike_postcode_select'] ) ? sanitize_text_field( (string) $_POST['admbike_postcode_select'] ) : '',
-				'postcode_raw'    => isset( $_POST['admbike_postcode_select'] ) ? sanitize_text_field( (string) $_POST['admbike_postcode_select'] ) : '',
-				'city'            => isset( $_POST['billing_city'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['billing_city'] ) ) : ( isset( $_POST['shipping_city'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['shipping_city'] ) ) : '' ),
+				'state_id'        => absint( $post['admbike_state_id'] ),
+				'municipality_id' => ! empty( $post['admbike_municipality_id'] ) ? absint( $post['admbike_municipality_id'] ) : 0,
+				'postcode'        => isset( $post['admbike_postcode_select'] ) ? sanitize_text_field( (string) $post['admbike_postcode_select'] ) : '',
+				'postcode_raw'    => isset( $post['admbike_postcode_select'] ) ? sanitize_text_field( (string) $post['admbike_postcode_select'] ) : '',
+				'city'            => isset( $post['billing_city'] ) ? sanitize_text_field( (string) $post['billing_city'] ) : ( isset( $post['shipping_city'] ) ? sanitize_text_field( (string) $post['shipping_city'] ) : '' ),
 			);
 
 			$previous_location = (array) WC()->session->get( self::SESSION_KEY, array() );
@@ -511,12 +513,13 @@ class ADMBike_Woo_Locations_Checkout {
 		if ( isset( WC()->session ) ) {
 			$session_location = (array) WC()->session->get( self::SESSION_KEY, array() );
 		}
+		$post = wp_unslash( $_POST );
 
 		$state_id = 0;
 		if ( ! empty( $data['admbike_state_id'] ) ) {
 			$state_id = absint( $data['admbike_state_id'] );
-		} elseif ( ! empty( $_POST['admbike_state_id'] ) ) {
-			$state_id = absint( wp_unslash( $_POST['admbike_state_id'] ) );
+		} elseif ( ! empty( $post['admbike_state_id'] ) ) {
+			$state_id = absint( $post['admbike_state_id'] );
 		} elseif ( ! empty( $session_location['state_id'] ) ) {
 			$state_id = absint( $session_location['state_id'] );
 		}
@@ -524,8 +527,8 @@ class ADMBike_Woo_Locations_Checkout {
 		$municipality_id = 0;
 		if ( ! empty( $data['admbike_municipality_id'] ) ) {
 			$municipality_id = absint( $data['admbike_municipality_id'] );
-		} elseif ( ! empty( $_POST['admbike_municipality_id'] ) ) {
-			$municipality_id = absint( wp_unslash( $_POST['admbike_municipality_id'] ) );
+		} elseif ( ! empty( $post['admbike_municipality_id'] ) ) {
+			$municipality_id = absint( $post['admbike_municipality_id'] );
 		} elseif ( ! empty( $session_location['municipality_id'] ) ) {
 			$municipality_id = absint( $session_location['municipality_id'] );
 		}
@@ -533,8 +536,8 @@ class ADMBike_Woo_Locations_Checkout {
 		$postcode = '';
 		if ( ! empty( $data['admbike_postcode_select'] ) ) {
 			$postcode = sanitize_text_field( (string) $data['admbike_postcode_select'] );
-		} elseif ( ! empty( $_POST['admbike_postcode_select'] ) ) {
-			$postcode = sanitize_text_field( wp_unslash( (string) $_POST['admbike_postcode_select'] ) );
+		} elseif ( ! empty( $post['admbike_postcode_select'] ) ) {
+			$postcode = sanitize_text_field( (string) $post['admbike_postcode_select'] );
 		} elseif ( ! empty( $session_location['postcode'] ) ) {
 			$postcode = sanitize_text_field( (string) $session_location['postcode'] );
 		}
@@ -544,10 +547,10 @@ class ADMBike_Woo_Locations_Checkout {
 			$city = sanitize_text_field( (string) $data['billing_city'] );
 		} elseif ( ! empty( $data['shipping_city'] ) ) {
 			$city = sanitize_text_field( (string) $data['shipping_city'] );
-		} elseif ( ! empty( $_POST['billing_city'] ) ) {
-			$city = sanitize_text_field( wp_unslash( (string) $_POST['billing_city'] ) );
-		} elseif ( ! empty( $_POST['shipping_city'] ) ) {
-			$city = sanitize_text_field( wp_unslash( (string) $_POST['shipping_city'] ) );
+		} elseif ( ! empty( $post['billing_city'] ) ) {
+			$city = sanitize_text_field( (string) $post['billing_city'] );
+		} elseif ( ! empty( $post['shipping_city'] ) ) {
+			$city = sanitize_text_field( (string) $post['shipping_city'] );
 		} elseif ( ! empty( $session_location['city'] ) ) {
 			$city = sanitize_text_field( (string) $session_location['city'] );
 		}
@@ -659,7 +662,9 @@ class ADMBike_Woo_Locations_Checkout {
 			return true;
 		}
 
-		if ( ! empty( $_POST['admbike_pickup_toggle'] ) ) {
+		$post = wp_unslash( $_POST );
+
+		if ( ! empty( $post['admbike_pickup_toggle'] ) ) {
 			return true;
 		}
 
@@ -674,8 +679,8 @@ class ADMBike_Woo_Locations_Checkout {
 			}
 		}
 
-		if ( ! empty( $_POST['shipping_method'] ) && is_array( $_POST['shipping_method'] ) ) {
-			foreach ( $_POST['shipping_method'] as $method_id ) {
+		if ( ! empty( $post['shipping_method'] ) && is_array( $post['shipping_method'] ) ) {
+			foreach ( $post['shipping_method'] as $method_id ) {
 				if ( is_string( $method_id ) && false !== strpos( $method_id, 'local_pickup' ) ) {
 					return true;
 				}
@@ -725,6 +730,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'admbikeCheckout',
 			array(
 				'restUrl'    => rest_url( 'admbike-woo-locations/v1/' ),
+				'nonce'      => wp_create_nonce( 'admbike_checkout_location' ),
 				'i18n'       => array(
 					'selectState'       => __( 'Selecciona un estado…', 'admbike-woo-locations' ),
 					'selectMunicipality'=> __( 'Selecciona un municipio…', 'admbike-woo-locations' ),
@@ -775,6 +781,7 @@ class ADMBike_Woo_Locations_Checkout {
 			'<script id="admbike-location-data" type="application/json">%s</script>',
 			wp_json_encode(
 				array(
+					'nonce' => wp_create_nonce( 'admbike_checkout_location' ),
 					'states' => $states_data,
 					'municipalities' => $munis_data,
 					'postcodes' => $pcs_data,

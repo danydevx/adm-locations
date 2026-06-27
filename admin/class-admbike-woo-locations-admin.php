@@ -23,7 +23,7 @@ class ADMBike_Woo_Locations_Admin {
 	/**
 	 * Required capability.
 	 */
-	public const CAPABILITY = 'manage_woocommerce';
+	public const CAPABILITY = 'manage_options';
 
 	/**
 	 * Constructor.
@@ -106,14 +106,6 @@ class ADMBike_Woo_Locations_Admin {
 			ADMBIKE_WOO_LOCATIONS_URL . 'assets/css/admin.css',
 			array(),
 			ADMBIKE_WOO_LOCATIONS_VERSION
-		);
-
-		wp_enqueue_script(
-			'admbike-woo-locations-admin',
-			ADMBIKE_WOO_LOCATIONS_URL . 'assets/js/admin.js',
-			array( 'jquery' ),
-			ADMBIKE_WOO_LOCATIONS_VERSION,
-			true
 		);
 	}
 

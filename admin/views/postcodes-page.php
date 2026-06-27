@@ -52,9 +52,11 @@ if ( 'add' === $action || 'edit' === $action ) {
 			wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
 		}
 
-		$municipality_id = isset( $_POST['municipality_id'] ) ? absint( $_POST['municipality_id'] ) : 0;
-		$postcode        = isset( $_POST['postcode'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $_POST['postcode'] ) : '';
-		$active          = isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 0;
+		$post = wp_unslash( $_POST );
+		$action = isset( $post['_action'] ) ? sanitize_key( (string) $post['_action'] ) : '';
+		$municipality_id = isset( $post['municipality_id'] ) ? absint( $post['municipality_id'] ) : 0;
+		$postcode        = isset( $post['postcode'] ) ? preg_replace( '/[^0-9A-Za-z-]/', '', (string) $post['postcode'] ) : '';
+		$active          = isset( $post['is_active'] ) ? (int) (bool) $post['is_active'] : 0;
 
 		if ( empty( $municipality_id ) || empty( $postcode ) ) {
 			$error_msg = __( 'Municipality and Postal Code are required.', 'admbike-woo-locations' );
@@ -70,7 +72,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 		}
 
 		$existing = $pc_repo->get_items( array( 'municipality_id' => $municipality_id, 'postcode' => $postcode ), 'id ASC', 1 );
-		if ( ! empty( $existing ) && ( 'add' === $_POST['_action'] || (int) $existing[0]['id'] !== $id ) ) {
+		if ( ! empty( $existing ) && ( 'add' === $action || (int) $existing[0]['id'] !== $id ) ) {
 			$error_msg = __( 'This postal code already exists in the selected municipality.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/postcodes-form.php';
 			return;
@@ -83,7 +85,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 			'is_active'       => $active,
 		);
 
-		if ( 'add' === $_POST['_action'] ) {
+		if ( 'add' === $action ) {
 			$result = $pc_repo->create( $data );
 			if ( $result ) {
 				$admin->redirect_with_message( 'success', urlencode( __( 'Postal code created successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::POSTCODES_SLUG ) );

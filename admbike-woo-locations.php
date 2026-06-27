@@ -3,12 +3,14 @@
  * Plugin Name:       ADM Bike Woo Locations
  * Plugin URI:        https://admbike.com/
  * Description:       WooCommerce shipping coverage manager by state, municipality and postal code.
-	 * Version:           0.2.1
- * Requires at least: 6.0
- * Requires PHP:      8.2
- * Author:            Daniel Lopez (orpot.com)
- * Text Domain:       admbike-woo-locations
- * Domain Path:       /languages
+ * Version:           0.2.1
+* Requires at least: 6.0
+* Requires PHP:      8.2
+* Author:            Daniel Lopez (orpot.com)
+ * License:           GPLv2 or later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+* Text Domain:       admbike-woo-locations
+* Domain Path:       /languages
  *
  * @package ADMBike_Woo_Locations
  */
@@ -35,6 +37,7 @@ require_once ADMBIKE_WOO_LOCATIONS_PATH . 'includes/class-admbike-woo-locations.
 require_once ADMBIKE_WOO_LOCATIONS_PATH . 'admin/class-admbike-woo-locations-admin.php';
 
 register_activation_hook( __FILE__, array( 'ADMBike_Woo_Locations_Installer', 'activate' ) );
+register_deactivation_hook( __FILE__, array( 'ADMBike_Woo_Locations_Installer', 'deactivate' ) );
 
 function admbike_woo_locations() {
 	static $plugin = null;

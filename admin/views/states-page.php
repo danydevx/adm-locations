@@ -36,14 +36,16 @@ if ( 'add' === $action || 'edit' === $action ) {
 			wp_die( esc_html__( 'Security check failed.', 'admbike-woo-locations' ) );
 		}
 
-		$code = isset( $_POST['code'] ) ? strtoupper( sanitize_text_field( (string) $_POST['code'] ) ) : '';
-		$name = isset( $_POST['name'] ) ? sanitize_text_field( (string) $_POST['name'] ) : '';
-		$coverage_mode = isset( $_POST['postcode_coverage_mode'] ) ? sanitize_key( (string) $_POST['postcode_coverage_mode'] ) : '';
+		$post = wp_unslash( $_POST );
+		$action = isset( $post['_action'] ) ? sanitize_key( (string) $post['_action'] ) : '';
+		$code = isset( $post['code'] ) ? strtoupper( sanitize_text_field( (string) $post['code'] ) ) : '';
+		$name = isset( $post['name'] ) ? sanitize_text_field( (string) $post['name'] ) : '';
+		$coverage_mode = isset( $post['postcode_coverage_mode'] ) ? sanitize_key( (string) $post['postcode_coverage_mode'] ) : '';
 		$coverage_mode = in_array( $coverage_mode, array( 'range', 'list' ), true ) ? $coverage_mode : '';
-		$postcode_from = isset( $_POST['postcode_from'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_from'] ) : '';
-		$postcode_to   = isset( $_POST['postcode_to'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_to'] ) : '';
-		$postcode_list = isset( $_POST['postcode_coverage_list'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['postcode_coverage_list'] ) ) : '';
-		$active = isset( $_POST['is_active'] ) ? (int) (bool) $_POST['is_active'] : 0;
+		$postcode_from = isset( $post['postcode_from'] ) ? preg_replace( '/[^0-9]/', '', (string) $post['postcode_from'] ) : '';
+		$postcode_to   = isset( $post['postcode_to'] ) ? preg_replace( '/[^0-9]/', '', (string) $post['postcode_to'] ) : '';
+		$postcode_list = isset( $post['postcode_coverage_list'] ) ? sanitize_textarea_field( (string) $post['postcode_coverage_list'] ) : '';
+		$active = isset( $post['is_active'] ) ? (int) (bool) $post['is_active'] : 0;
 
 		if ( empty( $code ) || empty( $name ) ) {
 			$error_msg = __( 'Code and Name are required.', 'admbike-woo-locations' );
@@ -85,7 +87,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 		}
 
 		$existing_code = $states_repo->get_by_code( $code );
-		if ( $existing_code && ( 'add' === $_POST['_action'] || ( 'edit' === $_POST['_action'] && (int) $existing_code['id'] !== $id ) ) ) {
+		if ( $existing_code && ( 'add' === $action || ( 'edit' === $action && (int) $existing_code['id'] !== $id ) ) ) {
 			$error_msg = __( 'A state with this code already exists.', 'admbike-woo-locations' );
 			include ADMBIKE_WOO_LOCATIONS_PATH . 'admin/views/states-form.php';
 			return;
@@ -99,7 +101,7 @@ if ( 'add' === $action || 'edit' === $action ) {
 			'is_active'              => $active,
 		);
 
-		if ( 'add' === $_POST['_action'] ) {
+		if ( 'add' === $action ) {
 			$result = $states_repo->create( $data );
 			if ( $result ) {
 				$admin->redirect_with_message( 'success', urlencode( __( 'State created successfully.', 'admbike-woo-locations' ) ), array( 'page' => ADMBike_Woo_Locations_Admin::STATES_SLUG ) );

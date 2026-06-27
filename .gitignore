@@ -24,6 +24,12 @@ Thumbs.db
 .opencode/tmp/
 .opencode/logs/
 
+# AI / assistant files
+.opencode/
+*.ai.md
+AI*.md
+ai*.md
+
 # WordPress
 wp-config.php
 

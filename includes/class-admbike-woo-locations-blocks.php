@@ -230,11 +230,12 @@ class ADMBike_Woo_Locations_Blocks {
 	 * @return void
 	 */
 	public function save_blocks_checkout_data( $order_id, $posted_data ) {
+		$post = wp_unslash( $_POST );
 		$state_code = '';
-		if ( ! empty( $_POST['billing_state'] ) ) {
-			$state_code = sanitize_text_field( wp_unslash( (string) $_POST['billing_state'] ) );
-		} elseif ( ! empty( $_POST['shipping_state'] ) ) {
-			$state_code = sanitize_text_field( wp_unslash( (string) $_POST['shipping_state'] ) );
+		if ( ! empty( $post['billing_state'] ) ) {
+			$state_code = sanitize_text_field( (string) $post['billing_state'] );
+		} elseif ( ! empty( $post['shipping_state'] ) ) {
+			$state_code = sanitize_text_field( (string) $post['shipping_state'] );
 		}
 
 		if ( '' === $state_code ) {
@@ -245,12 +246,12 @@ class ADMBike_Woo_Locations_Blocks {
 		$state           = $states_repo->get_by_code_or_name( $state_code );
 		$state_id        = $state && ! empty( $state['id'] ) ? absint( $state['id'] ) : 0;
 		$municipality_id = 0;
-		if ( ! empty( $_POST['billing_city'] ) ) {
-			$municipality_id = absint( $_POST['billing_city'] );
-		} elseif ( ! empty( $_POST['shipping_city'] ) ) {
-			$municipality_id = absint( $_POST['shipping_city'] );
+		if ( ! empty( $post['billing_city'] ) ) {
+			$municipality_id = absint( $post['billing_city'] );
+		} elseif ( ! empty( $post['shipping_city'] ) ) {
+			$municipality_id = absint( $post['shipping_city'] );
 		}
-		$postcode        = isset( $_POST['admbike_blocks_postcode'] ) ? sanitize_text_field( (string) $_POST['admbike_blocks_postcode'] ) : '';
+		$postcode        = isset( $post['admbike_blocks_postcode'] ) ? sanitize_text_field( (string) $post['admbike_blocks_postcode'] ) : '';
 
 		$muni_repo   = new ADMBike_Woo_Locations_Municipality_Repository();
 		$pc_repo     = new ADMBike_Woo_Locations_Postcode_Repository();

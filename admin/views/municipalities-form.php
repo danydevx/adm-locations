@@ -15,7 +15,8 @@ $error_msg = isset( $error_msg ) ? $error_msg : '';
 $is_edit   = ( null !== $item && ! empty( $item ) );
 $muni_repo_local = new ADMBike_Woo_Locations_Municipality_Repository();
 
-$selected_coverage_mode = $is_edit ? (string) ( $item['postcode_coverage_mode'] ?? '' ) : ( isset( $_POST['postcode_coverage_mode'] ) ? sanitize_key( (string) $_POST['postcode_coverage_mode'] ) : 'range' );
+$post = wp_unslash( $_POST );
+$selected_coverage_mode = $is_edit ? (string) ( $item['postcode_coverage_mode'] ?? '' ) : ( isset( $post['postcode_coverage_mode'] ) ? sanitize_key( (string) $post['postcode_coverage_mode'] ) : 'range' );
 $selected_coverage_mode = in_array( $selected_coverage_mode, array( 'range', 'list' ), true ) ? $selected_coverage_mode : 'range';
 $selected_postcode_from = '';
 $selected_postcode_to   = '';
@@ -39,9 +40,9 @@ if ( $is_edit ) {
 		}
 	}
 } else {
-	$selected_postcode_from = isset( $_POST['postcode_from'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_from'] ) : '';
-	$selected_postcode_to   = isset( $_POST['postcode_to'] ) ? preg_replace( '/[^0-9]/', '', (string) $_POST['postcode_to'] ) : '';
-	$selected_postcode_list = isset( $_POST['postcode_coverage_list'] ) ? sanitize_textarea_field( wp_unslash( (string) $_POST['postcode_coverage_list'] ) ) : '';
+	$selected_postcode_from = isset( $post['postcode_from'] ) ? preg_replace( '/[^0-9]/', '', (string) $post['postcode_from'] ) : '';
+	$selected_postcode_to   = isset( $post['postcode_to'] ) ? preg_replace( '/[^0-9]/', '', (string) $post['postcode_to'] ) : '';
+	$selected_postcode_list = isset( $post['postcode_coverage_list'] ) ? sanitize_textarea_field( (string) $post['postcode_coverage_list'] ) : '';
 }
 ?>
 <?php if ( $error_msg ) : ?>
