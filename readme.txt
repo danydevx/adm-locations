@@ -67,14 +67,26 @@ El checkout no permitirá completar el pedido para esa ubicación.
 2. Selectores de ubicación en checkout.
 3. Vista previa de reglas y mensajes de cobertura.
 
-== Changelog ==
+== Historial de Cambios ==
 
 = 0.2.2 =
-* Rebrand to Orpot Woo Locations.
-* Improved admin help and Spanish UI.
+* Rebrand a Orpot Woo Locations.
+* Ayuda del admin mejorada y UI en español.
+
+= 0.1.0 =
+* Lanzamiento inicial.
+* Administración de Estados.
+* Administración de Municipios.
+* Administración de Códigos Postales.
+* CRUD de reglas de envío.
+* Prioridades y detección de conflictos.
+* Selectores guiados en el Checkout.
+* Indicador de cobertura.
+* API REST para consulta de cobertura.
+* Sistema de registro de depuración (Debug).
 
 = 0.2.1 =
-* Initial public release.
+* Lanzamiento inicial.
 
 == Upgrade Notice ==
 

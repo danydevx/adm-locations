@@ -351,6 +351,29 @@ class ADMBike_Woo_Locations_Admin {
 			</div>
 
 			<div class="admbike-dashboard-grid" style="margin-top: 24px;">
+				<section class="admbike-panel admbike-panel--wide">
+					<div class="admbike-panel__head">
+						<div>
+							<p class="admbike-panel__eyebrow"><?php echo esc_html( 'Historial de cambios' ); ?></p>
+							<h2><?php echo esc_html( '0.1.0' ); ?></h2>
+						</div>
+					</div>
+					<ul>
+						<li><?php echo esc_html( 'Lanzamiento inicial.' ); ?></li>
+						<li><?php echo esc_html( 'Administración de Estados.' ); ?></li>
+						<li><?php echo esc_html( 'Administración de Municipios.' ); ?></li>
+						<li><?php echo esc_html( 'Administración de Códigos Postales.' ); ?></li>
+						<li><?php echo esc_html( 'CRUD de reglas de envío.' ); ?></li>
+						<li><?php echo esc_html( 'Prioridades y detección de conflictos.' ); ?></li>
+						<li><?php echo esc_html( 'Selectores guiados en el Checkout.' ); ?></li>
+						<li><?php echo esc_html( 'Indicador de cobertura.' ); ?></li>
+						<li><?php echo esc_html( 'API REST para consulta de cobertura.' ); ?></li>
+						<li><?php echo esc_html( 'Sistema de registro de depuración (Debug).' ); ?></li>
+					</ul>
+				</section>
+			</div>
+
+			<div class="admbike-dashboard-grid" style="margin-top: 24px;">
 				<section class="admbike-panel">
 					<div class="admbike-panel__head">
 						<div>
