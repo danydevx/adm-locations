@@ -89,7 +89,7 @@ class ADMBike_Woo_Locations_Blocks_Checkout {
 
 		return array(
 			'restUrl'                   => rest_url( 'admbike-woo-locations/v1/' ),
-			'frontendNoCoverageMessage' => __( 'No disponible en tu zona', 'admbike-woo-locations' ),
+			'frontendNoCoverageMessage' => admbike_woo_locations()->get_no_coverage_message(),
 			'states'                    => $states,
 			'municipalities'            => $municipalities,
 			'i18n'                      => array(

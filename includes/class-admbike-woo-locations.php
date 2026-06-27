@@ -29,6 +29,9 @@ class ADMBike_Woo_Locations {
 		add_action( 'plugins_loaded', array( 'ADMBike_Woo_Locations_Installer', 'maybe_upgrade' ), 5 );
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_filter( 'woocommerce_states', array( $this, 'limit_woocommerce_states' ), 20 );
+		add_filter( 'gettext', array( $this, 'filter_woocommerce_gettext' ), 20, 3 );
+		add_filter( 'woocommerce_no_shipping_available_html', array( $this, 'filter_no_shipping_available_html' ), 20 );
+		add_filter( 'woocommerce_cart_no_shipping_available_html', array( $this, 'filter_no_shipping_available_html' ), 20 );
 	}
 
 	/**
@@ -47,9 +50,69 @@ class ADMBike_Woo_Locations {
 	 */
 	public function get_no_coverage_message() {
 		$default = __( 'No disponible en tu zona', 'admbike-woo-locations' );
-		$message = get_option( self::OPTION_NO_COVERAGE_MESSAGE, $default );
+		$saved   = $this->get_saved_no_coverage_message();
+		$message = '' !== $saved ? $saved : $default;
 
-		return is_string( $message ) && '' !== trim( $message ) ? $message : $default;
+		return apply_filters( 'admbike_woo_locations_no_coverage_message', $message );
+	}
+
+	/**
+	 * Get the saved WooCommerce no-shipping replacement message.
+	 *
+	 * @return string
+	 */
+	public function get_saved_no_coverage_message() {
+		$message = get_option( self::OPTION_NO_COVERAGE_MESSAGE, '' );
+
+		return is_string( $message ) ? trim( $message ) : '';
+	}
+
+	/**
+	 * Filter WooCommerce's no-shipping HTML output.
+	 *
+	 * @param string $html Existing HTML.
+	 * @return string
+	 */
+	public function filter_no_shipping_available_html( $html ) {
+		$message = $this->get_saved_no_coverage_message();
+
+		if ( '' === trim( (string) $message ) ) {
+			return $html;
+		}
+
+		return '<p class="woocommerce-info">' . esc_html( $message ) . '</p>';
+	}
+
+	/**
+	 * Replace WooCommerce's default no-shipping text with the saved message.
+	 *
+	 * @param string $translation Translated text.
+	 * @param string $text Original text.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	public function filter_woocommerce_gettext( $translation, $text, $domain ) {
+		if ( 'woocommerce' !== $domain ) {
+			return $translation;
+		}
+
+		$targets = array(
+			'No shipping options are available for this address. Please verify the address is correct or try a different address.',
+			'No shipping options are available for this address.',
+			'No shipping options were found for this address. Please verify the address is correct or try a different address.',
+			'No shipping options were found for this address.',
+		);
+
+		if ( ! in_array( $text, $targets, true ) ) {
+			return $translation;
+		}
+
+		$message = $this->get_saved_no_coverage_message();
+		if ( '' === $message ) {
+			return $translation;
+		}
+
+		return wp_strip_all_tags( $message );
 	}
 
 	/**

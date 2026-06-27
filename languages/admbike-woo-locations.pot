@@ -42,6 +42,18 @@ msgstr ""
 msgid "Security check failed."
 msgstr ""
 
+#: admin/class-admbike-woo-locations-admin.php
+msgid "Coverage message updated successfully."
+msgstr ""
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "WooCommerce no-shipping messages are handled by the shipping hooks now. The plugin filters the default WooCommerce message when no coverage applies."
+msgstr ""
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "Save this text to replace the WooCommerce no-shipping message. Leave blank to keep WooCommerce default."
+msgstr ""
+
 #: admin/views/states-page.php
 msgid "Back to list"
 msgstr ""

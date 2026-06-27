@@ -134,11 +134,15 @@ class ADMBike_Woo_Locations_Admin {
 			$this->redirect_with_message( 'success', urlencode( __( 'Coverage message updated successfully.', 'admbike-woo-locations' ) ), array( 'page' => self::SLUG ) );
 		}
 
-		$message = admbike_woo_locations() ? admbike_woo_locations()->get_no_coverage_message() : '';
+		$message = admbike_woo_locations() ? admbike_woo_locations()->get_saved_no_coverage_message() : '';
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'ADM Bike Locations', 'admbike-woo-locations' ); ?></h1>
 			<p><?php esc_html_e( 'Shipping coverage management by State, Municipality and Postal Code.', 'admbike-woo-locations' ); ?></p>
+			<div class="notice notice-info inline">
+				<p><?php esc_html_e( 'WooCommerce no-shipping messages are handled by the shipping hooks now. The plugin filters the default WooCommerce message when no coverage applies.', 'admbike-woo-locations' ); ?></p>
+				<p><code>woocommerce_no_shipping_available_html</code> / <code>woocommerce_cart_no_shipping_available_html</code></p>
+			</div>
 			<form method="post" action="">
 				<?php wp_nonce_field( 'admbike_no_coverage_message', 'admbike_no_coverage_message_nonce' ); ?>
 				<table class="form-table" role="presentation">
@@ -146,7 +150,7 @@ class ADMBike_Woo_Locations_Admin {
 						<th scope="row"><label for="admbike_no_coverage_message"><?php esc_html_e( 'No Coverage Message', 'admbike-woo-locations' ); ?></label></th>
 						<td>
 							<textarea id="admbike_no_coverage_message" name="admbike_no_coverage_message" rows="10" class="large-text code"><?php echo esc_textarea( $message ); ?></textarea>
-							<p class="description"><?php esc_html_e( 'Shown when the customer selects shipping and no coverage rule applies.', 'admbike-woo-locations' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Save this text to replace the WooCommerce no-shipping message. Leave blank to keep WooCommerce default.', 'admbike-woo-locations' ); ?></p>
 						</td>
 					</tr>
 				</table>

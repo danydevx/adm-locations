@@ -58,6 +58,37 @@
 		);
 	}
 
+	function replaceWooShippingMessage( root ) {
+		var message = ( i18n.noCoverage || '' ).trim();
+		var walker;
+		var node;
+		var phrases;
+
+		if ( ! message || ! root ) {
+			return;
+		}
+
+		phrases = [
+			'No shipping options are available for this address. Please verify the address is correct or try a different address.',
+			'No shipping options are available for this address.',
+			'No shipping options were found for this address. Please verify the address is correct or try a different address.',
+			'No shipping options were found for this address.',
+			'There are no shipping options available. Please ensure that your address has been entered correctly, or contact us if you need any help.',
+			'There are no shipping options available. Please ensure that your address has been entered correctly, or contact us if you need any help.'
+		];
+
+		walker = document.createTreeWalker( root, NodeFilter.SHOW_TEXT, null, false );
+		while ( ( node = walker.nextNode() ) ) {
+			var text = String( node.nodeValue || '' );
+			for ( var i = 0; i < phrases.length; i += 1 ) {
+				if ( text.indexOf( phrases[ i ] ) !== -1 ) {
+					node.nodeValue = text.replace( phrases[ i ], message );
+					break;
+				}
+			}
+		}
+	}
+
 	function persistCheckoutLocation( payload ) {
 		if ( ! restUrl || ! window.fetch ) {
 			return;
@@ -336,6 +367,22 @@
 		getField( '#admbike_postcode_select' ).on( 'change', handlePostcodeChange );
 	}
 
+	function observeShippingMessages() {
+		var observer;
+
+		replaceWooShippingMessage( document.body );
+
+		if ( ! window.MutationObserver ) {
+			return;
+		}
+
+		observer = new MutationObserver( function() {
+			replaceWooShippingMessage( document.body );
+		} );
+
+		observer.observe( document.body, { childList: true, subtree: true, characterData: true } );
+	}
+
 	function init() {
 		if ( ! getField( '#admbike_state_id' ).length ) {
 			return;
@@ -347,6 +394,7 @@
 		populatePostcodeSelect();
 		syncNativeCheckoutFields();
 		bindEvents();
+		observeShippingMessages();
 	}
 
 	$( init );

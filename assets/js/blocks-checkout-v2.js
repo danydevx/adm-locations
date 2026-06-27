@@ -557,6 +557,37 @@
 		node.textContent = message;
 	}
 
+	function replaceWooShippingMessage(root) {
+		var message = String(noCoverageMessage || '').trim();
+		var walker;
+		var node;
+		var phrases;
+
+		if (!message || !root) {
+			return;
+		}
+
+		phrases = [
+			'No shipping options are available for this address. Please verify the address is correct or try a different address.',
+			'No shipping options are available for this address.',
+			'No shipping options were found for this address. Please verify the address is correct or try a different address.',
+			'No shipping options were found for this address.',
+			'There are no shipping options available. Please ensure that your address has been entered correctly, or contact us if you need any help.',
+			'There are no shipping options available. Please ensure that your address has been entered correctly, or contact us if you need any help.'
+		];
+
+		walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+		while ((node = walker.nextNode())) {
+			var text = String(node.nodeValue || '');
+			for (var i = 0; i < phrases.length; i += 1) {
+				if (text.indexOf(phrases[i]) !== -1) {
+					node.nodeValue = text.replace(phrases[i], message);
+					break;
+				}
+			}
+		}
+	}
+
 	function scheduleCoverage(form, skipPostcode) {
 		var timer = formTimers.get(form);
 		if (timer) {
@@ -674,8 +705,27 @@
 		bindForm(getAddressForm('shipping'));
 	}
 
+	function observeShippingMessages() {
+		if (!window.MutationObserver || !document.body) {
+			return;
+		}
+
+		replaceWooShippingMessage(document.body);
+
+		if (window.__admbikeBlocksMessageObserver) {
+			return;
+		}
+
+		window.__admbikeBlocksMessageObserver = new MutationObserver(function () {
+			replaceWooShippingMessage(document.body);
+		});
+
+		window.__admbikeBlocksMessageObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+	}
+
 	function start() {
 		initForms();
+		observeShippingMessages();
 
 		if (window.__admbikeBlocksObserver) {
 			return;

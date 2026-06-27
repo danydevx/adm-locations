@@ -42,6 +42,18 @@ msgstr "Vista no encontrada."
 msgid "Security check failed."
 msgstr "Verificación de seguridad fallida."
 
+#: admin/class-admbike-woo-locations-admin.php
+msgid "Coverage message updated successfully."
+msgstr "Mensaje de cobertura actualizado correctamente."
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "WooCommerce no-shipping messages are handled by the shipping hooks now. The plugin filters the default WooCommerce message when no coverage applies."
+msgstr "Los mensajes de WooCommerce sin envío ahora se gestionan mediante los hooks de envío. El plugin filtra el mensaje predeterminado de WooCommerce cuando no aplica cobertura."
+
+#: admin/class-admbike-woo-locations-admin.php
+msgid "Save this text to replace the WooCommerce no-shipping message. Leave blank to keep WooCommerce default."
+msgstr "Guarda este texto para reemplazar el mensaje de WooCommerce sin envío. Déjalo en blanco para conservar el mensaje predeterminado de WooCommerce."
+
 #: admin/views/states-page.php
 msgid "Back to list"
 msgstr "Volver al listado"

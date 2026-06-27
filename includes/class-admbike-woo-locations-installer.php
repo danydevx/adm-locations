@@ -37,6 +37,7 @@ class ADMBike_Woo_Locations_Installer {
 	 * @return void
 	 */
 	public static function uninstall() {
+		self::delete_managed_shipping_method_settings();
 		self::delete_managed_shipping_zones();
 		self::drop_plugin_tables();
 		delete_option( self::DB_VERSION_OPTION );
@@ -166,6 +167,7 @@ class ADMBike_Woo_Locations_Installer {
 		self::backfill_shipping_rule_postcode_code();
 		self::seed_default_coverage_data();
 		self::cleanup_orphaned_shipping_zones();
+		add_option( ADMBIKE_WOO_LOCATIONS::OPTION_NO_COVERAGE_MESSAGE, __( 'No disponible en tu zona', 'admbike-woo-locations' ) );
 
 		update_option( self::DB_VERSION_OPTION, ADMBIKE_WOO_LOCATIONS_DB_VERSION );
 	}
@@ -230,6 +232,57 @@ class ADMBike_Woo_Locations_Installer {
 				ELSE rule_title
 			END"
 		);
+	}
+
+	/**
+	 * Delete WooCommerce shipping method settings created by the plugin.
+	 *
+	 * @return void
+	 */
+	protected static function delete_managed_shipping_method_settings() {
+		global $wpdb;
+
+		$zones_table       = $wpdb->prefix . 'woocommerce_shipping_zones';
+		$methods_table     = $wpdb->prefix . 'woocommerce_shipping_zone_methods';
+		$rules_table       = $wpdb->prefix . 'admbike_locations_shipping_rules';
+		$zone_ids          = array();
+		$method_option_ids = array();
+
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $methods_table ) ) ) {
+			if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $rules_table ) ) ) {
+				$zone_ids = $wpdb->get_col( "SELECT DISTINCT wc_zone_id FROM {$rules_table} WHERE wc_zone_id > 0" );
+			}
+
+			if ( empty( $zone_ids ) && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $zones_table ) ) ) {
+				$zone_ids = $wpdb->get_col( "SELECT zone_id FROM {$zones_table} WHERE zone_name LIKE 'ADM -%' OR zone_name LIKE 'ADM %'" );
+			}
+
+			if ( empty( $zone_ids ) ) {
+				return;
+			}
+
+			$placeholders = implode( ',', array_fill( 0, count( $zone_ids ), '%d' ) );
+			$query        = $wpdb->prepare(
+				"SELECT instance_id, method_id FROM {$methods_table} WHERE zone_id IN ({$placeholders})",
+				array_map( 'absint', $zone_ids )
+			);
+			$method_option_ids = $wpdb->get_results( $query, ARRAY_A );
+		}
+
+		if ( empty( $method_option_ids ) ) {
+			return;
+		}
+
+		foreach ( $method_option_ids as $method ) {
+			$instance_id = isset( $method['instance_id'] ) ? absint( $method['instance_id'] ) : 0;
+			$method_id   = isset( $method['method_id'] ) ? sanitize_key( (string) $method['method_id'] ) : '';
+
+			if ( $instance_id <= 0 || '' === $method_id ) {
+				continue;
+			}
+
+			delete_option( 'woocommerce_' . $method_id . '_' . $instance_id . '_settings' );
+		}
 	}
 
 	/**
@@ -1624,14 +1677,15 @@ class ADMBike_Woo_Locations_Installer {
 			}
 		}
 
+		// Shipping rules are no longer seeded on install.
+		return;
+
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$rules_repo->get_table_name()} WHERE notes LIKE %s",
 				'seed:%'
 			)
 		);
-
-		return;
 
 		$rules = array(
 			array(
