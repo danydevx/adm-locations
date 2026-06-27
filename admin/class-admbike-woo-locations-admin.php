@@ -19,6 +19,7 @@ class ADMBike_Woo_Locations_Admin {
 	public const MUNICIPALITIES_SLUG = 'admbike-woo-locations-municipalities';
 	public const POSTCODES_SLUG   = 'admbike-woo-locations-postcodes';
 	public const SHIPPING_SLUG    = 'admbike-woo-locations-shipping';
+	public const HELP_SLUG        = 'admbike-woo-locations-help';
 
 	/**
 	 * Required capability.
@@ -42,8 +43,8 @@ class ADMBike_Woo_Locations_Admin {
 	 */
 	public function add_menu_pages() {
 		add_menu_page(
-			__( 'ADM Bike Locations', 'admbike-woo-locations' ),
-			__( 'ADM Locations', 'admbike-woo-locations' ),
+			__( 'Orpot Woo Locations', 'admbike-woo-locations' ),
+			__( 'Orpot Woo Locations', 'admbike-woo-locations' ),
 			self::CAPABILITY,
 			self::SLUG,
 			array( $this, 'render_admin_page' ),
@@ -86,6 +87,15 @@ class ADMBike_Woo_Locations_Admin {
 			self::SHIPPING_SLUG,
 			array( $this, 'render_shipping_page' )
 		);
+
+		add_submenu_page(
+			self::SLUG,
+			__( 'Ayuda', 'admbike-woo-locations' ),
+			__( 'Ayuda', 'admbike-woo-locations' ),
+			self::CAPABILITY,
+			self::HELP_SLUG,
+			array( $this, 'render_help_page' )
+		);
 	}
 
 	/**
@@ -97,7 +107,7 @@ class ADMBike_Woo_Locations_Admin {
 	public function enqueue_assets( $hook ) {
 		$hook = (string) $hook;
 
-		if ( false === strpos( $hook, self::SLUG ) && false === strpos( $hook, self::STATES_SLUG ) && false === strpos( $hook, self::MUNICIPALITIES_SLUG ) && false === strpos( $hook, self::POSTCODES_SLUG ) && false === strpos( $hook, self::SHIPPING_SLUG ) ) {
+		if ( false === strpos( $hook, self::SLUG ) && false === strpos( $hook, self::STATES_SLUG ) && false === strpos( $hook, self::MUNICIPALITIES_SLUG ) && false === strpos( $hook, self::POSTCODES_SLUG ) && false === strpos( $hook, self::SHIPPING_SLUG ) && false === strpos( $hook, self::HELP_SLUG ) ) {
 			return;
 		}
 
@@ -291,6 +301,85 @@ class ADMBike_Woo_Locations_Admin {
 	 */
 	public function render_shipping_page() {
 		$this->render_view( 'shipping-page' );
+	}
+
+	/**
+	 * Render the help page.
+	 *
+	 * @return void
+	 */
+	public function render_help_page() {
+		?>
+		<div class="wrap admbike-admin-wrap">
+			<h1><?php echo esc_html( 'Ayuda' ); ?></h1>
+			<p><?php echo esc_html( 'Guía rápida para configurar el plugin y evitar errores comunes al crear coberturas y reglas.' ); ?></p>
+
+			<div class="notice notice-info inline">
+				<p><?php echo esc_html( 'Orden recomendado: Estados -> Municipios -> Códigos postales -> Reglas de envío.' ); ?></p>
+				<p><?php echo esc_html( 'Si te faltan opciones en un selector, primero crea y activa el nivel anterior.' ); ?></p>
+			</div>
+
+			<div class="admbike-dashboard-grid" style="margin-top: 24px;">
+				<section class="admbike-panel">
+					<div class="admbike-panel__head">
+						<div>
+							<p class="admbike-panel__eyebrow"><?php echo esc_html( 'Inicio rápido' ); ?></p>
+							<h2><?php echo esc_html( 'Primeros pasos' ); ?></h2>
+						</div>
+					</div>
+					<ol>
+						<li><?php echo esc_html( 'Crea los estados con su código oficial de WooCommerce. Ejemplo: JA, NL, QROO.' ); ?></li>
+						<li><?php echo esc_html( 'Agrega los municipios y define su cobertura postal. Usa rango si quieres de un CP inicial a uno final.' ); ?></li>
+						<li><?php echo esc_html( 'Carga los códigos postales si necesitas una lista exacta o si solo algunos CP deben quedar habilitados.' ); ?></li>
+						<li><?php echo esc_html( 'Crea reglas de envío, revisa el tipo de regla y activa el método de envío en WooCommerce.' ); ?></li>
+					</ol>
+					<p class="description"><?php echo esc_html( 'Tip: si un municipio no aparece, verifica que su estado esté activo y que la cobertura esté completa.' ); ?></p>
+				</section>
+
+				<section class="admbike-panel">
+					<div class="admbike-panel__head">
+						<div>
+							<p class="admbike-panel__eyebrow"><?php echo esc_html( 'Cómo funciona' ); ?></p>
+							<h2><?php echo esc_html( 'Lógica de cobertura' ); ?></h2>
+						</div>
+					</div>
+					<p><?php echo esc_html( 'El plugin evalúa la ubicación del cliente por estado, municipio y código postal.' ); ?></p>
+					<p><?php echo esc_html( 'La regla más específica gana: un CP exacto supera un municipio, y un municipio supera un estado.' ); ?></p>
+					<p><?php echo esc_html( 'Si una regla queda como bloqueada, el checkout no permitirá completar la compra para esa ubicación.' ); ?></p>
+					<p><?php echo esc_html( 'Si una regla no aparece en el checkout, revisa que esté activa y que su prioridad sea menor que las reglas menos específicas.' ); ?></p>
+				</section>
+			</div>
+
+			<div class="admbike-dashboard-grid" style="margin-top: 24px;">
+				<section class="admbike-panel">
+					<div class="admbike-panel__head">
+						<div>
+							<p class="admbike-panel__eyebrow"><?php echo esc_html( 'Preguntas frecuentes' ); ?></p>
+							<h2><?php echo esc_html( 'FAQ' ); ?></h2>
+						</div>
+					</div>
+					<p><strong><?php echo esc_html( '¿Necesito WooCommerce?' ); ?></strong><br><?php echo esc_html( 'Sí. WooCommerce debe estar activo y configurado antes de usar este plugin.' ); ?></p>
+					<p><strong><?php echo esc_html( '¿Puedo usarlo sin cobertura personalizada?' ); ?></strong><br><?php echo esc_html( 'Sí, pero el checkout mostrará menos opciones hasta que cargues estados, municipios y códigos postales.' ); ?></p>
+					<p><strong><?php echo esc_html( '¿Por qué no veo mi estado o municipio?' ); ?></strong><br><?php echo esc_html( 'Asegúrate de que el estado esté activo, que el código sea correcto y que no falten rangos o listas de cobertura.' ); ?></p>
+					<p><strong><?php echo esc_html( '¿Qué pasa si dejo la cobertura vacía?' ); ?></strong><br><?php echo esc_html( 'El formulario te pedirá completar el rango o la lista antes de guardar.' ); ?></p>
+					<p><strong><?php echo esc_html( '¿Cómo pruebo que una regla funciona?' ); ?></strong><br><?php echo esc_html( 'Ve a Reglas de envío, usa Vista previa y simula una ubicación concreta con estado, municipio y CP.' ); ?></p>
+				</section>
+
+				<section class="admbike-panel">
+					<div class="admbike-panel__head">
+						<div>
+							<p class="admbike-panel__eyebrow"><?php echo esc_html( 'Acciones' ); ?></p>
+							<h2><?php echo esc_html( 'Atajos' ); ?></h2>
+						</div>
+					</div>
+					<p><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::STATES_SLUG ) ); ?>"><?php echo esc_html( 'Ir a Estados' ); ?></a></p>
+					<p><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MUNICIPALITIES_SLUG ) ); ?>"><?php echo esc_html( 'Ir a Municipios' ); ?></a></p>
+					<p><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::POSTCODES_SLUG ) ); ?>"><?php echo esc_html( 'Ir a Códigos postales' ); ?></a></p>
+					<p><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::SHIPPING_SLUG ) ); ?>"><?php echo esc_html( 'Ir a Reglas de envío' ); ?></a></p>
+				</section>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**

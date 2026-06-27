@@ -51,7 +51,7 @@ class ADMBike_Woo_Locations_Shipping_Method extends WC_Shipping_Method {
 	 */
 	public function __construct( $instance_id = 0 ) {
 		$this->id                 = 'orpot_woo_locations';
-		$this->method_title        = __( 'ADM Bike Locations', 'admbike-woo-locations' );
+		$this->method_title        = __( 'Orpot Woo Locations', 'admbike-woo-locations' );
 		$this->method_description  = __( 'Calculates shipping based on state, municipality and postal code coverage rules.', 'admbike-woo-locations' );
 		$this->instance_id         = absint( $instance_id );
 		$this->supports            = array(
