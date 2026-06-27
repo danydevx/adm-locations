@@ -1,5 +1,7 @@
 === ADM Bike Woo Locations ===
-Contributors: admbike
+Contributors: Orpot
+Author: Daniel Lopez
+Author URI: https://orpot.com
 Tags: woocommerce, shipping, locations, states, municipalities, postcodes
 Requires at least: 6.0
 Tested up to: 6.4
