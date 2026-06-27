@@ -1,6 +1,6 @@
 # Orpot Mexico Woo Reglas
 
-**Contribuyentes:** admbike  
+**Contribuyentes:** Orpot  
 **Etiquetas:** woocommerce, envíos, ubicaciones, estados, municipios, códigos postales  
 **Requiere al menos:** 6.0  
 **Probado hasta:** 6.4  
@@ -50,7 +50,7 @@ En lugar de depender únicamente de las Zonas de Envío de WooCommerce, este com
 
 2. Active el plugin desde el menú **Plugins** de WordPress.
 
-3. Vaya al menú **ADM Bike Locations**.
+3. Vaya al menú **Orpot Woo Locations**.
 
 4. Agregue sus Estados, Municipios y Códigos Postales.
 
@@ -86,7 +86,7 @@ En lugar de depender únicamente de las Zonas de Envío de WooCommerce, este com
 
 1. Ir a:
 
-**ADM Bike Locations → Estados**
+**Orpot Woo Locations → Estados**
 
 2. Hacer clic en **Agregar nuevo**.
 
@@ -105,7 +105,7 @@ En lugar de depender únicamente de las Zonas de Envío de WooCommerce, este com
 
 1. Ir a:
 
-**ADM Bike Locations → Municipios**
+**Orpot Woo Locations → Municipios**
 
 2. Agregar un nuevo municipio.
 
@@ -123,7 +123,7 @@ En lugar de depender únicamente de las Zonas de Envío de WooCommerce, este com
 
 1. Ir a:
 
-**ADM Bike Locations → Códigos Postales**
+**Orpot Woo Locations → Códigos Postales**
 
 2. Agregar un nuevo código.
 
@@ -149,7 +149,7 @@ Las reglas se evalúan por prioridad:
 
 1. Ir a:
 
-**ADM Bike Locations → Reglas de Envío**
+**Orpot Woo Locations → Reglas de Envío**
 
 2. Crear una nueva regla.
 
@@ -231,7 +231,7 @@ Verifique que:
 
 **WooCommerce → Ajustes → Envíos**
 
-2. Exista al menos una Zona de Envío activa con el método **ADM Bike Locations**.
+2. Exista al menos una Zona de Envío activa con el método **Orpot Woo Locations**.
 
 3. Existan Estados, Municipios y Códigos Postales registrados.
 
@@ -351,7 +351,30 @@ El plugin expone una API REST en:
 
 ---
 
+# Ayuda en el Admin
+
+La ayuda integrada del plugin está en **Orpot Woo Locations → Ayuda**.
+
+Incluye:
+
+- Orden recomendado de configuración
+- Pasos rápidos con ejemplos
+- Lógica de cobertura y prioridad
+- Preguntas frecuentes
+- Historial de cambios
+
+---
+
 # Historial de Cambios
+
+## 0.2.2
+
+- Rebrand a Orpot Woo Locations.
+- Ayuda del admin mejorada y UI en español.
+
+## 0.2.1
+
+- Lanzamiento inicial.
 
 ## 0.1.0
 
