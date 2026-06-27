@@ -162,14 +162,14 @@ $woocommerce_mx_states = ADMBike_Woo_Locations_Admin::get_woocommerce_mx_states(
 
 ?>
 <div class="wrap">
-	<h1 class="wp-heading-inline"><?php esc_html_e( 'States', 'admbike-woo-locations' ); ?></h1>
-	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=add' ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New', 'admbike-woo-locations' ); ?></a>
+	<h1 class="wp-heading-inline"><?php echo esc_html( 'Estados' ); ?></h1>
+	<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG . '&action=add' ) ); ?>" class="page-title-action"><?php echo esc_html( 'Agregar estado' ); ?></a>
 	<hr class="wp-header-end">
 
 	<div class="notice notice-info inline admbike-help-card">
-		<h2><?php esc_html_e( 'WooCommerce MX State Codes', 'admbike-woo-locations' ); ?></h2>
+		<h2><?php echo esc_html( 'Códigos de estados MX de WooCommerce' ); ?></h2>
 		<p>
-			<?php esc_html_e( 'Use the exact WooCommerce state code in the State Code field. This is required so Checkout Blocks can map states to your municipalities correctly.', 'admbike-woo-locations' ); ?>
+			<?php echo esc_html( 'Usa el código exacto de WooCommerce en el campo Código del Estado. Esto es necesario para que Checkout Blocks relacione correctamente los estados con tus municipios.' ); ?>
 		</p>
 		<div class="admbike-help-grid">
 			<?php foreach ( $woocommerce_mx_states as $code => $label ) : ?>
@@ -184,27 +184,27 @@ $woocommerce_mx_states = ADMBike_Woo_Locations_Admin::get_woocommerce_mx_states(
 	<form method="get" action="">
 		<input type="hidden" name="page" value="<?php echo esc_attr( ADMBike_Woo_Locations_Admin::STATES_SLUG ); ?>">
 		<p class="search-box">
-			<label for="post-search-input"><?php esc_html_e( 'Search states:', 'admbike-woo-locations' ); ?></label>
+			<label for="post-search-input"><?php echo esc_html( 'Buscar estados:' ); ?></label>
 			<input type="search" id="post-search-input" name="s" value="<?php echo esc_attr( $search ); ?>">
-			<input type="submit" class="button" value="<?php esc_attr_e( 'Search', 'admbike-woo-locations' ); ?>">
+			<input type="submit" class="button" value="<?php echo esc_attr( 'Buscar' ); ?>">
 			<?php if ( $search ) : ?>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG ) ); ?>" class="button"><?php esc_html_e( 'Clear', 'admbike-woo-locations' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . ADMBike_Woo_Locations_Admin::STATES_SLUG ) ); ?>" class="button"><?php echo esc_html( 'Limpiar' ); ?></a>
 			<?php endif; ?>
 		</p>
 	</form>
 
 	<?php if ( empty( $items ) ) : ?>
-		<p><?php esc_html_e( 'No states found.', 'admbike-woo-locations' ); ?></p>
+		<p><?php echo esc_html( 'No se encontraron estados.' ); ?></p>
 	<?php else : ?>
 		<table class="wp-list-table widefat fixed striped">
 			<thead>
 				<tr>
-					<th scope="col" class="column-id" style="width:60px;"><?php esc_html_e( 'ID', 'admbike-woo-locations' ); ?></th>
-					<th scope="col" class="column-code"><?php esc_html_e( 'Code', 'admbike-woo-locations' ); ?></th>
-					<th scope="col" class="column-name"><?php esc_html_e( 'Name', 'admbike-woo-locations' ); ?></th>
-					<th scope="col" class="column-coverage"><?php esc_html_e( 'Coverage', 'admbike-woo-locations' ); ?></th>
-					<th scope="col" class="column-status" style="width:100px;"><?php esc_html_e( 'Status', 'admbike-woo-locations' ); ?></th>
-					<th scope="col" class="column-actions" style="width:160px;"><?php esc_html_e( 'Actions', 'admbike-woo-locations' ); ?></th>
+					<th scope="col" class="column-id" style="width:60px;"><?php echo esc_html( 'ID' ); ?></th>
+					<th scope="col" class="column-code"><?php echo esc_html( 'Código' ); ?></th>
+					<th scope="col" class="column-name"><?php echo esc_html( 'Nombre' ); ?></th>
+					<th scope="col" class="column-coverage"><?php echo esc_html( 'Cobertura' ); ?></th>
+					<th scope="col" class="column-status" style="width:100px;"><?php echo esc_html( 'Estado' ); ?></th>
+					<th scope="col" class="column-actions" style="width:160px;"><?php echo esc_html( 'Acciones' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -231,27 +231,27 @@ $woocommerce_mx_states = ADMBike_Woo_Locations_Admin::get_woocommerce_mx_states(
 						<td class="column-code"><strong><?php echo esc_html( $item['code'] ); ?></strong></td>
 						<td class="column-name"><?php echo esc_html( $item['name'] ); ?></td>
 						<td class="column-coverage">
-							<?php
-							$coverage_mode = ! empty( $item['postcode_coverage_mode'] ) ? $item['postcode_coverage_mode'] : '';
-							$coverage      = (string) ( $item['postcode_coverage'] ?? '' );
-							if ( '' === $coverage ) {
-								echo esc_html__( 'No limit / state only', 'admbike-woo-locations' );
-							} else {
-								echo esc_html( ucfirst( (string) $coverage_mode ) . ': ' . $coverage );
-							}
-							?>
+								<?php
+								$coverage_mode = ! empty( $item['postcode_coverage_mode'] ) ? $item['postcode_coverage_mode'] : '';
+								$coverage      = (string) ( $item['postcode_coverage'] ?? '' );
+								if ( '' === $coverage ) {
+									echo esc_html( 'Sin límite / solo estado' );
+								} else {
+									echo esc_html( ucfirst( (string) $coverage_mode ) . ': ' . $coverage );
+								}
+								?>
 						</td>
 						<td class="column-status">
 							<?php if ( $item['is_active'] ) : ?>
-								<span class="dashicons dashicons-yes-alt" style="color:#2271b1;" title="<?php esc_attr_e( 'Active', 'admbike-woo-locations' ); ?>"></span>
-							<?php else : ?>
-								<span class="dashicons dashicons-dismiss" style="color:#d63638;" title="<?php esc_attr_e( 'Inactive', 'admbike-woo-locations' ); ?>"></span>
-							<?php endif; ?>
+								<span class="dashicons dashicons-yes-alt" style="color:#2271b1;" title="<?php echo esc_attr( 'Activo' ); ?>"></span>
+								<?php else : ?>
+									<span class="dashicons dashicons-dismiss" style="color:#d63638;" title="<?php echo esc_attr( 'Inactivo' ); ?>"></span>
+								<?php endif; ?>
 						</td>
 						<td class="column-actions">
-							<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php esc_html_e( 'Edit', 'admbike-woo-locations' ); ?></a>
-							<a href="<?php echo esc_url( $toggle_url ); ?>" class="button button-small"><?php echo esc_html( $item['is_active'] ? __( 'Deactivate', 'admbike-woo-locations' ) : __( 'Activate', 'admbike-woo-locations' ) ); ?></a>
-							<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('<?php esc_attr_e( 'Delete this state?', 'admbike-woo-locations' ); ?>');"><?php esc_html_e( 'Delete', 'admbike-woo-locations' ); ?></a>
+							<a href="<?php echo esc_url( $edit_url ); ?>" class="button button-small"><?php echo esc_html( 'Editar' ); ?></a>
+							<a href="<?php echo esc_url( $toggle_url ); ?>" class="button button-small"><?php echo esc_html( $item['is_active'] ? 'Desactivar' : 'Activar' ); ?></a>
+							<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('<?php echo esc_attr( '¿Eliminar este estado?' ); ?>');"><?php echo esc_html( 'Eliminar' ); ?></a>
 						</td>
 					</tr>
 				<?php endforeach; ?>

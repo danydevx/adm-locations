@@ -10,7 +10,7 @@ Stable tag: 0.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Advanced WooCommerce shipping coverage management by State, Municipality and Postal Code.
+Gestor avanzado de cobertura de envíos para WooCommerce por Estado, Municipio y Código Postal.
 
 == Description ==
 

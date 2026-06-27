@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Orpot Mexico Woo Reglas
  * Plugin URI:        https://admbike.com/
- * Description:       WooCommerce shipping coverage manager by state, municipality and postal code.
+ * Description:       Gestor de cobertura de envíos para WooCommerce por estado, municipio y código postal.
  * Version:           0.2.1
 * Requires at least: 6.0
 * Requires PHP:      8.2

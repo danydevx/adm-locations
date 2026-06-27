@@ -14,7 +14,7 @@ Administración avanzada de cobertura de envíos para WooCommerce mediante Estad
 
 # Descripción
 
-Orpot Mexico Woo Reglas permite definir áreas de cobertura para envíos utilizando una estructura jerárquica:
+Orpot Mexico Woo Reglas permite definir áreas de cobertura para envíos usando una estructura jerárquica:
 
 **Estado → Municipio → Código Postal**
 

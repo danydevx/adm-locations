@@ -126,30 +126,133 @@ class ADMBike_Woo_Locations_Admin {
 			$this->redirect_with_message( 'success', urlencode( __( 'Coverage message updated successfully.', 'admbike-woo-locations' ) ), array( 'page' => self::SLUG ) );
 		}
 
-		$message = admbike_woo_locations() ? admbike_woo_locations()->get_saved_no_coverage_message() : '';
+		$plugin = admbike_woo_locations();
+		$states_total = $plugin ? $plugin->states()->count_all() : 0;
+		$states_active = $plugin ? $plugin->states()->count_all( '', 1 ) : 0;
+		$municipalities_total = $plugin ? $plugin->municipalities()->count_all() : 0;
+		$municipalities_active = $plugin ? $plugin->municipalities()->count_all( '', null, 1 ) : 0;
+		$postcodes_total = $plugin ? $plugin->postcodes()->count_all() : 0;
+		$postcodes_active = $plugin ? $plugin->postcodes()->count_all( '', null, null, 1 ) : 0;
+		$rules_total = $plugin ? $plugin->shipping_rules()->count_all() : 0;
+		$rules_active = $plugin ? $plugin->shipping_rules()->count_all( '', null, null, 1 ) : 0;
+		$message = $plugin ? $plugin->get_saved_no_coverage_message() : '';
+		$message_preview = '' !== trim( $message ) ? wp_trim_words( wp_strip_all_tags( $message ), 18, '…' ) : __( 'No coverage message configured yet.', 'admbike-woo-locations' );
+		$metric_suffix = '%1$s activos';
 		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'ADM Bike Locations', 'admbike-woo-locations' ); ?></h1>
-			<p><?php esc_html_e( 'Shipping coverage management by State, Municipality and Postal Code.', 'admbike-woo-locations' ); ?></p>
-			<div class="notice notice-info inline">
-				<p><?php esc_html_e( 'WooCommerce no-shipping messages are handled by the shipping hooks now. The plugin filters the default WooCommerce message when no coverage applies.', 'admbike-woo-locations' ); ?></p>
-				<p><code>woocommerce_no_shipping_available_html</code> / <code>woocommerce_cart_no_shipping_available_html</code></p>
+		<div class="wrap admbike-admin-wrap admbike-dashboard-wrap">
+			<div class="admbike-dashboard-hero">
+				<div class="admbike-dashboard-hero__copy">
+			<p class="admbike-dashboard-kicker"><?php echo esc_html( 'Panel' ); ?></p>
+					<h1><?php echo esc_html( __( 'Orpot Mexico Woo Reglas', 'admbike-woo-locations' ) ); ?></h1>
+					<p><?php echo esc_html( 'Administración de cobertura de envíos por Estado, Municipio y Código Postal.' ); ?></p>
+				</div>
+				<div class="admbike-dashboard-hero__actions">
+					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::SHIPPING_SLUG . '&action=add' ) ); ?>"><?php echo esc_html( 'Nueva regla' ); ?></a>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::STATES_SLUG . '&action=add' ) ); ?>"><?php echo esc_html( 'Estados' ); ?></a>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MUNICIPALITIES_SLUG . '&action=add' ) ); ?>"><?php echo esc_html( 'Municipios' ); ?></a>
+					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::POSTCODES_SLUG . '&action=add' ) ); ?>"><?php echo esc_html( 'Códigos postales' ); ?></a>
+				</div>
 			</div>
-			<form method="post" action="">
-				<?php wp_nonce_field( 'admbike_no_coverage_message', 'admbike_no_coverage_message_nonce' ); ?>
-				<table class="form-table" role="presentation">
-					<tr>
-						<th scope="row"><label for="admbike_no_coverage_message"><?php esc_html_e( 'No Coverage Message', 'admbike-woo-locations' ); ?></label></th>
-						<td>
-							<textarea id="admbike_no_coverage_message" name="admbike_no_coverage_message" rows="10" class="large-text code"><?php echo esc_textarea( $message ); ?></textarea>
-							<p class="description"><?php esc_html_e( 'Save this text to replace the WooCommerce no-shipping message. Leave blank to keep WooCommerce default.', 'admbike-woo-locations' ); ?></p>
-						</td>
-					</tr>
-				</table>
-				<p><button type="submit" class="button button-primary"><?php esc_html_e( 'Save Message', 'admbike-woo-locations' ); ?></button></p>
-			</form>
-			<hr>
-			<p><?php esc_html_e( 'Use the submenu above to manage States, Municipalities, Postal Codes and Shipping Rules.', 'admbike-woo-locations' ); ?></p>
+
+			<?php $this->render_admin_messages(); ?>
+
+			<div class="admbike-dashboard-stats">
+				<?php
+				$cards = array(
+					array(
+						'label' => 'Estados',
+						'value' => $states_total,
+						'meta'  => sprintf( $metric_suffix, number_format_i18n( $states_active ) ),
+						'url'   => admin_url( 'admin.php?page=' . self::STATES_SLUG ),
+						'icon'  => 'dashicons-location',
+					),
+					array(
+						'label' => 'Municipios',
+						'value' => $municipalities_total,
+						'meta'  => sprintf( $metric_suffix, number_format_i18n( $municipalities_active ) ),
+						'url'   => admin_url( 'admin.php?page=' . self::MUNICIPALITIES_SLUG ),
+						'icon'  => 'dashicons-admin-site',
+					),
+					array(
+						'label' => 'Códigos postales',
+						'value' => $postcodes_total,
+						'meta'  => sprintf( $metric_suffix, number_format_i18n( $postcodes_active ) ),
+						'url'   => admin_url( 'admin.php?page=' . self::POSTCODES_SLUG ),
+						'icon'  => 'dashicons-tag',
+					),
+					array(
+						'label' => 'Reglas de envío',
+						'value' => $rules_total,
+						'meta'  => sprintf( $metric_suffix, number_format_i18n( $rules_active ) ),
+						'url'   => admin_url( 'admin.php?page=' . self::SHIPPING_SLUG ),
+						'icon'  => 'dashicons-randomize',
+					),
+				);
+
+				foreach ( $cards as $card ) :
+					?>
+					<div class="admbike-stat-card">
+						<div class="admbike-stat-card__icon"><span class="dashicons <?php echo esc_attr( $card['icon'] ); ?>"></span></div>
+						<div class="admbike-stat-card__body">
+							<div class="admbike-stat-card__value"><?php echo esc_html( number_format_i18n( (int) $card['value'] ) ); ?></div>
+							<div class="admbike-stat-card__label"><?php echo esc_html( $card['label'] ); ?></div>
+							<div class="admbike-stat-card__meta"><?php echo esc_html( $card['meta'] ); ?></div>
+						</div>
+						<a class="admbike-stat-card__link" href="<?php echo esc_url( $card['url'] ); ?>"><?php echo esc_html( 'Abrir' ); ?></a>
+					</div>
+					<?php
+				endforeach;
+				?>
+			</div>
+
+			<div class="admbike-dashboard-grid">
+				<section class="admbike-panel admbike-panel--wide">
+					<div class="admbike-panel__head">
+						<div>
+							<p class="admbike-panel__eyebrow"><?php echo esc_html( 'Estado del sistema' ); ?></p>
+							<h2><?php echo esc_html( 'Mensaje de cobertura' ); ?></h2>
+						</div>
+						<span class="admbike-panel__badge"><?php echo esc_html( number_format_i18n( $rules_active ) ); ?> <?php echo esc_html( 'activos' ); ?></span>
+					</div>
+
+					<p class="admbike-panel__summary"><?php echo esc_html( $message_preview ); ?></p>
+
+					<form method="post" action="" class="admbike-message-form">
+						<?php wp_nonce_field( 'admbike_no_coverage_message', 'admbike_no_coverage_message_nonce' ); ?>
+						<label for="admbike_no_coverage_message" class="screen-reader-text"><?php echo esc_html( 'Mensaje de cobertura sin envío' ); ?></label>
+						<textarea id="admbike_no_coverage_message" name="admbike_no_coverage_message" rows="6" class="large-text code"><?php echo esc_textarea( $message ); ?></textarea>
+						<p class="description"><?php echo esc_html( 'Guarda este texto para reemplazar el mensaje de WooCommerce cuando no haya envío. Déjalo vacío para conservar el mensaje predeterminado.' ); ?></p>
+						<p><button type="submit" class="button button-primary"><?php echo esc_html( 'Guardar mensaje' ); ?></button></p>
+					</form>
+				</section>
+
+				<section class="admbike-panel">
+					<p class="admbike-panel__eyebrow"><?php echo esc_html( 'Acciones rápidas' ); ?></p>
+					<ul class="admbike-quick-actions">
+						<li><a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::STATES_SLUG ) ); ?>"><?php esc_html_e( 'States', 'admbike-woo-locations' ); ?></a></li>
+						<li><a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MUNICIPALITIES_SLUG ) ); ?>"><?php esc_html_e( 'Municipalities', 'admbike-woo-locations' ); ?></a></li>
+						<li><a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::POSTCODES_SLUG ) ); ?>"><?php esc_html_e( 'Postal Codes', 'admbike-woo-locations' ); ?></a></li>
+						<li><a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::SHIPPING_SLUG ) ); ?>"><?php esc_html_e( 'Shipping Rules', 'admbike-woo-locations' ); ?></a></li>
+					</ul>
+
+					<div class="admbike-panel__note">
+						<p><code>woocommerce_no_shipping_available_html</code></p>
+						<p><code>woocommerce_cart_no_shipping_available_html</code></p>
+					</div>
+				</section>
+			</div>
+
+			<div class="admbike-dashboard-grid admbike-dashboard-grid--compact">
+				<section class="admbike-panel">
+					<p class="admbike-panel__eyebrow"><?php echo esc_html( 'Resumen' ); ?></p>
+					<ul class="admbike-status-list">
+						<li><?php echo esc_html( sprintf( '%1$s activos', number_format_i18n( $states_active ) ) ); ?> Estados</li>
+						<li><?php echo esc_html( sprintf( '%1$s activos', number_format_i18n( $municipalities_active ) ) ); ?> Municipios</li>
+						<li><?php echo esc_html( sprintf( '%1$s activos', number_format_i18n( $postcodes_active ) ) ); ?> Códigos postales</li>
+						<li><?php echo esc_html( sprintf( '%1$s activos', number_format_i18n( $rules_active ) ) ); ?> Reglas de envío</li>
+					</ul>
+				</section>
+			</div>
 		</div>
 		<?php
 	}
